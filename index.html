@@ -1,1025 +1,738 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNAGUI SUSHI うなぎ - Menú Digital</title>
-    <!-- Carga de Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configuración personalizada de Tailwind -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'unagui-deep-black': '#0a0a0a',
-                        'unagui-charcoal': '#1c1c1c',
-                        'unagui-orange': '#D4A017',
-                        'unagui-orange-light': '#40809',
-                    },
-                }
-            }
-        }
-    </script>
-    <!-- Carga de Lucide Icons -->
-    <script type="module" src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--unagui-deep-black);
-            color: white;
-            min-height: 100vh;
-        }
-        #category-nav {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        #category-nav::-webkit-scrollbar {
-            display: none;
-        }
-        .nav-modal-slide-in {
-            transform: translateX(0%);
-            transition: transform 0.3s ease-out;
-        }
-        .nav-modal-slide-out {
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in;
-        }
-        .clickable-name {
-            cursor: pointer;
-            text-decoration: underline;
-            text-decoration-style: dotted;
-            text-decoration-color: #D4A017;
-            text-underline-offset: 4px;
-        }
-        .promo-modal-enter {
-            animation: fadeInScale 0.3s ease-out forwards;
-        }
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-    </style>
-</head>
-<body class="antialiased bg-unagui-deep-black selection:bg-unagui-orange selection:text-white">
-    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- CABECERA -->
-        <header class="text-center py-6 mb-6 border-b-2 border-unagui-orange/50 relative">
-            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-                UNAGUI
-            </h1>
-            <p class="text-2xl sm:text-4xl font-['Noto_Serif_JP'] text-unagui-orange mt-1">
-                SUSHI うなぎ
-            </p>
-            <!-- Selector de Idioma -->
-            <div id="language-selector" class="absolute top-6 left-0 flex space-x-2 p-2">
-                <button id="lang-es" class="text-xs font-bold px-2 py-1 rounded bg-unagui-orange text-black">ES</button>
-                <button id="lang-en" class="text-xs font-bold px-2 py-1 rounded text-gray-400 hover:text-white border border-gray-600">EN</button>
-            </div>
-            <!-- Botón de Menú Hamburguesa -->
-            <button id="nav-menu-btn" 
-                class="absolute top-6 right-0 p-2 rounded text-white hover:text-unagui-orange transition-colors duration-200"
-                onclick="toggleNavModal(true)"
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ShoppingCart, Menu, X, Plus, Minus, Check, Phone, MapPin, Clock, Facebook, Instagram, Twitter, ArrowRight, ArrowLeft, Star, Heart } from 'lucide-react';
+
+// Mock data for the menu
+const menuCategories = [
+  {
+    id: 'salchipapas',
+    name: 'Salchipapas',
+    color: '#F7B500',
+    items: [
+      { id: 'sp1', name: 'Salchipapa Clásica', price: 12.50, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Salchipapa+Clásica', description: 'Papas fritas con salchichas y salsas a elección' },
+      { id: 'sp2', name: 'Salchipapa Premium', price: 18.90, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Salchipapa+Premium', description: 'Papas fritas con salchichas premium, queso fundido y tocino crujiente' },
+      { id: 'sp3', name: 'Salchipapa XL', price: 24.50, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Salchipapa+XL', description: 'Porción extra grande con doble salchicha y toppings especiales' }
+    ]
+  },
+  {
+    id: 'personales',
+    name: 'Personales',
+    color: '#CE1F3A',
+    items: [
+      { id: 'p1', name: 'Hamburguesa Personal', price: 15.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Hamburguesa+Personal', description: 'Hamburguesa con carne de res, queso, lechuga, tomate y cebolla' },
+      { id: 'p2', name: 'Perro Caliente Personal', price: 10.50, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Perro+Caliente', description: 'Perro caliente con mostaza, ketchup y cebolla picada' },
+      { id: 'p3', name: 'Asado Personal', price: 18.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Asado+Personal', description: 'Asado al carbón con papas fritas y ensalada' }
+    ]
+  },
+  {
+    id: 'para-dos',
+    name: 'Para Dos',
+    color: '#F08A24',
+    items: [
+      { id: 'd1', name: 'Combo Para Dos', price: 32.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Combo+Para+Dos', description: 'Dos hamburguesas, dos porciones de papas y dos bebidas' },
+      { id: 'd2', name: 'Doble Perro Caliente', price: 25.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Doble+Perro', description: 'Dos perros calientes con todos los toppings y papas fritas' },
+      { id: 'd3', name: 'Asado para Dos', price: 40.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Asado+para+Dos', description: 'Asado al carbón para dos personas con papas y ensalada' }
+    ]
+  },
+  {
+    id: 'familiares',
+    name: 'Familiares',
+    color: '#F7B500',
+    items: [
+      { id: 'f1', name: 'Familiar Grande', price: 55.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Familiar+Grande', description: 'Hamburguesas, perros calientes, papas y bebidas para 4 personas' },
+      { id: 'f2', name: 'Familiar XL', price: 75.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Familiar+XL', description: 'Menú completo para 6 personas con todos nuestros productos estrella' },
+      { id: 'f3', name: 'Familiar Premium', price: 85.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Familiar+Premium', description: 'Familiar con productos premium, queso fundido y toppings especiales' }
+    ]
+  },
+  {
+    id: 'perros-vapor',
+    name: 'Perros Calientes al Vapor',
+    color: '#CE1F3A',
+    items: [
+      { id: 'pv1', name: 'Perro Clásico al Vapor', price: 8.50, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Perro+Clásico', description: 'Perro caliente clásico al vapor con mostaza y ketchup' },
+      { id: 'pv2', name: 'Perro Deluxe al Vapor', price: 12.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Perro+Deluxe', description: 'Perro caliente al vapor con queso fundido, tocino y cebolla picada' },
+      { id: 'pv3', name: 'Perro Extremo al Vapor', price: 15.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Perro+Extremo', description: 'Perro caliente al vapor con doble salchicha, queso, tocino y salsas especiales' }
+    ]
+  },
+  {
+    id: 'perros-carbon',
+    name: 'Perros Calientes al Carbón',
+    color: '#F08A24',
+    items: [
+      { id: 'pc1', name: 'Perro Clásico al Carbón', price: 10.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Perro+Clásico', description: 'Perro caliente al carbón con mostaza y ketchup' },
+      { id: 'pc2', name: 'Perro Deluxe al Carbón', price: 14.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Perro+Deluxe', description: 'Perro caliente al carbón con queso fundido, tocino y cebolla picada' },
+      { id: 'pc3', name: 'Perro Extremo al Carbón', price: 17.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Perro+Extremo', description: 'Perro caliente al carbón con doble salchicha, queso, tocino y salsas especiales' }
+    ]
+  },
+  {
+    id: 'hamburguesas',
+    name: 'Hamburguesas',
+    color: '#F7B500',
+    items: [
+      { id: 'h1', name: 'Hamburguesa Clásica', price: 12.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Hamburguesa+Clásica', description: 'Hamburguesa con carne de res, queso, lechuga, tomate y cebolla' },
+      { id: 'h2', name: 'Hamburguesa Premium', price: 18.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Hamburguesa+Premium', description: 'Hamburguesa con carne premium, queso cheddar, tocino y salsa especial' },
+      { id: 'h3', name: 'Hamburguesa Doble', price: 22.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Hamburguesa+Doble', description: 'Hamburguesa con doble carne, doble queso, tocino y salsas especiales' }
+    ]
+  },
+  {
+    id: 'asados-carbon',
+    name: 'Asados al Carbón',
+    color: '#CE1F3A',
+    items: [
+      { id: 'a1', name: 'Asado Clásico', price: 20.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Asado+Clásico', description: 'Asado al carbón con papas fritas y ensalada' },
+      { id: 'a2', name: 'Asado Premium', price: 28.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Asado+Premium', description: 'Asado al carbón con carne premium, papas fritas y ensalada' },
+      { id: 'a3', name: 'Asado Familiar', price: 45.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Asado+Familiar', description: 'Asado al carbón para 4 personas con papas y ensalada' }
+    ]
+  },
+  {
+    id: 'bebidas-alcohol',
+    name: 'Bebidas con Alcohol',
+    color: '#F08A24',
+    items: [
+      { id: 'ba1', name: 'Cóctel Clásico', price: 15.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Cóctel+Clásico', description: 'Cóctel clásico con ron, jugo de naranja y limón' },
+      { id: 'ba2', name: 'Cóctel Tropical', price: 18.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Cóctel+Tropical', description: 'Cóctel tropical con ron, jugo de piña y coco' },
+      { id: 'ba3', name: 'Cóctel Premium', price: 22.00, image: 'https://placehold.co/300x200/F08A24/FFFFFF?text=Cóctel+Premium', description: 'Cóctel premium con vodka, jugo de frutas y licor de cereza' }
+    ]
+  },
+  {
+    id: 'bebidas-sin-alcohol',
+    name: 'Bebidas sin Alcohol',
+    color: '#F7B500',
+    items: [
+      { id: 'bs1', name: 'Jugo Natural', price: 5.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Jugo+Natural', description: 'Jugo natural de naranja, limón o piña' },
+      { id: 'bs2', name: 'Refresco', price: 3.50, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Refresco', description: 'Refresco de cola, limón o naranja' },
+      { id: 'bs3', name: 'Agua Saborizada', price: 4.00, image: 'https://placehold.co/300x200/F7B500/FFFFFF?text=Agua+Saborizada', description: 'Agua saborizada con limón, naranja o fresa' }
+    ]
+  },
+  {
+    id: 'adiciones',
+    name: 'Adiciones',
+    color: '#CE1F3A',
+    items: [
+      { id: 'ad1', name: 'Papa Extra', price: 3.00, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Papa+Extra', description: 'Porción extra de papas fritas' },
+      { id: 'ad2', name: 'Queso', price: 2.50, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Queso', description: 'Queso fundido para agregar a cualquier producto' },
+      { id: 'ad3', name: 'Tocineta', price: 3.50, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Tocineta', description: 'Tocineta crujiente para agregar a cualquier producto' },
+      { id: 'ad4', name: 'Salsas', price: 1.50, image: 'https://placehold.co/300x200/CE1F3A/FFFFFF?text=Salsas', description: 'Salsas especiales para agregar a cualquier producto' }
+    ]
+  }
+];
+
+// Mock data for slideshow
+const slideshowImages = [
+  { id: 1, src: 'https://placehold.co/800x400/F7B500/FFFFFF?text=Salchipapas+Premium', alt: 'Salchipapas Premium' },
+  { id: 2, src: 'https://placehold.co/800x400/CE1F3A/FFFFFF?text=Hamburguesas+Premium', alt: 'Hamburguesas Premium' },
+  { id: 3, src: 'https://placehold.co/800x400/F08A24/FFFFFF?text=Perros+Calientes', alt: 'Perros Calientes' },
+  { id: 4, src: 'https://placehold.co/800x400/F7B500/FFFFFF?text=Asados+al+Carbón', alt: 'Asados al Carbón' }
+];
+
+const App = () => {
+  const [currentSection, setCurrentSection] = useState('home');
+  const [cart, setCart] = useState([]);
+  const [showCart, setShowCart] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [orderType, setOrderType] = useState('pickup'); // pickup or delivery
+  const [orderComments, setOrderComments] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [expandedItems, setExpandedItems] = useState(new Set());
+  const cartRef = useRef(null);
+
+  // Auto-advance slideshow
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slideshowImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle adding item to cart
+  const addToCart = (item) => {
+    const existingItem = cart.find(cartItem => cartItem.id === item.id);
+    
+    if (existingItem) {
+      setCart(cart.map(cartItem => 
+        cartItem.id === item.id 
+          ? { ...cartItem, quantity: cartItem.quantity + quantity }
+          : cartItem
+      ));
+    } else {
+      setCart([...cart, { ...item, quantity }]);
+    }
+    
+    setQuantity(1);
+    setShowCart(true);
+  };
+
+  // Handle removing item from cart
+  const removeFromCart = (itemId) => {
+    setCart(cart.filter(item => item.id !== itemId));
+  };
+
+  // Handle updating quantity in cart
+  const updateQuantity = (itemId, newQuantity) => {
+    if (newQuantity < 1) return;
+    setCart(cart.map(item => 
+      item.id === itemId ? { ...item, quantity: newQuantity } : item
+    ));
+  };
+
+  // Toggle item expansion
+  const toggleItemExpansion = (itemId) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(itemId)) {
+      newExpanded.delete(itemId);
+    } else {
+      newExpanded.add(itemId);
+    }
+    setExpandedItems(newExpanded);
+  };
+
+  // Calculate total
+  const getTotal = () => {
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const deliveryFee = orderType === 'delivery' ? 5.00 : 0.00;
+    return {
+      subtotal,
+      deliveryFee,
+      total: subtotal + deliveryFee
+    };
+  };
+
+  // Handle checkout
+  const handleCheckout = () => {
+    alert('¡Pedido confirmado! Gracias por elegir Calle Brava.');
+    setCart([]);
+    setShowCart(false);
+    setOrderType('pickup');
+    setOrderComments('');
+    setCurrentSection('home');
+    setExpandedItems(new Set());
+  };
+
+  // Navigation component
+  const Navigation = () => (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-yellow-500">
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <div className="text-2xl font-bold text-yellow-500" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+            Calle Brava
+          </div>
+        </div>
+        
+        {/* Desktop navigation */}
+        <div className="hidden md:flex space-x-6">
+          <button 
+            onClick={() => setCurrentSection('home')} 
+            className={`px-4 py-2 rounded-full transition-colors ${currentSection === 'home' ? 'bg-yellow-500 text-black' : 'text-white hover:bg-yellow-500/20'}`}
+          >
+            Inicio
+          </button>
+          <button 
+            onClick={() => setCurrentSection('menu')} 
+            className={`px-4 py-2 rounded-full transition-colors ${currentSection === 'menu' ? 'bg-yellow-500 text-black' : 'text-white hover:bg-yellow-500/20'}`}
+          >
+            Menú
+          </button>
+          <button 
+            onClick={() => setCurrentSection('contact')} 
+            className={`px-4 py-2 rounded-full transition-colors ${currentSection === 'contact' ? 'bg-yellow-500 text-black' : 'text-white hover:bg-yellow-500/20'}`}
+          >
+            Contacto
+          </button>
+        </div>
+        
+        {/* Mobile menu button */}
+        <button 
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="md:hidden text-white"
+        >
+          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+      
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-black border-t border-yellow-500 p-4">
+          <div className="flex flex-col space-y-3">
+            <button 
+              onClick={() => { setCurrentSection('home'); setIsMenuOpen(false); }} 
+              className={`px-4 py-2 rounded-full transition-colors ${currentSection === 'home' ? 'bg-yellow-500 text-black' : 'text-white hover:bg-yellow-500/20'}`}
             >
-                <i data-lucide="menu" class="w-7 h-7"></i>
+              Inicio
             </button>
-        </header>
-        <!-- SELECCIÓN DE SEDE -->
-        <div id="sede-selection-container" class="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
-            <h2 id="welcome-title" class="text-2xl font-bold text-white mb-2">Bienvenido</h2>
-            <p id="welcome-subtitle" class="text-gray-400 mb-8 text-sm">Selecciona tu sede para ver el menú</p>
-            <div class="space-y-4 w-full max-w-xs">
-                <button 
-                    class="w-full py-4 rounded-xl font-bold text-lg border border-unagui-orange bg-unagui-charcoal text-white hover:bg-unagui-orange hover:text-black transition-all shadow-lg"
-                    onclick="selectSede('Sede Los Cocos')"
-                >
-                    Sede Los Cocos
-                </button>
-                <button 
-                    class="w-full py-4 rounded-xl font-bold text-lg border border-unagui-orange bg-unagui-charcoal text-white hover:bg-unagui-orange hover:text-black transition-all shadow-lg"
-                    onclick="selectSede('Sede Aluna Plaza')"
-                >
-                    Sede Aluna Plaza
-                </button>
-            </div>
+            <button 
+              onClick={() => { setCurrentSection('menu'); setIsMenuOpen(false); }} 
+              className={`px-4 py-2 rounded-full transition-colors ${currentSection === 'menu' ? 'bg-yellow-500 text-black' : 'text-white hover:bg-yellow-500/20'}`}
+            >
+              Menú
+            </button>
+            <button 
+              onClick={() => { setCurrentSection('contact'); setIsMenuOpen(false); }} 
+              className={`px-4 py-2 rounded-full transition-colors ${currentSection === 'contact' ? 'bg-yellow-500 text-black' : 'text-white hover:bg-yellow-500/20'}`}
+            >
+              Contacto
+            </button>
+          </div>
         </div>
-        <!-- CONTENEDOR DEL MENÚ -->
-        <div id="menu-container" class="hidden">
-            <div class="text-center mb-4">
-                <span id="active-sede-display" class="text-xs uppercase tracking-widest text-unagui-orange font-semibold border border-unagui-orange px-2 py-1 rounded"></span>
-            </div>
-            <!-- Navegación de Categorías -->
-            <nav id="category-nav" class="flex overflow-x-auto whitespace-nowrap gap-3 pb-4 mb-4">
-            </nav>
-            <!-- Lista de Productos -->
-            <main id="menu-content" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            </main>
-            <!-- FOOTER -->
-            <footer class="mt-12 py-4 text-center border-t border-unagui-orange/30">
-                <p id="footer-text" class="text-sm text-gray-500">UNAGUI, todos los derechos reservados.</p>
-            </footer>
+      )}
+    </nav>
+  );
+
+  // Floating cart button
+  const FloatingCartButton = () => (
+    <button
+      onClick={() => setShowCart(true)}
+      className="fixed bottom-6 right-6 bg-yellow-500 text-black p-4 rounded-full shadow-lg hover:bg-yellow-600 transition-all transform hover:scale-110 z-50"
+    >
+      <ShoppingCart size={24} />
+      {cart.length > 0 && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+          {cart.reduce((sum, item) => sum + item.quantity, 0)}
+        </span>
+      )}
+    </button>
+  );
+
+  // Home section
+  const HomeSection = () => (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
+      {/* Background texture */}
+      <div className="absolute inset-0 bg-[url('https://placehold.co/800x800/1a1a1a/1a1a1a?text=')] opacity-30"></div>
+      
+      {/* Slideshow */}
+      <div className="relative h-[70vh] md:h-[80vh] overflow-hidden">
+        {slideshowImages.map((image, index) => (
+          <motion.div
+            key={image.id}
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: index === currentSlide ? 1 : 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <img
+              src={image.src}
+              alt={image.alt}
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        ))}
+        
+        {/* Navigation arrows */}
+        <button
+          onClick={() => setCurrentSlide((prev) => (prev - 1 + slideshowImages.length) % slideshowImages.length)}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors"
+        >
+          <ArrowLeft size={24} />
+        </button>
+        <button
+          onClick={() => setCurrentSlide((prev) => (prev + 1) % slideshowImages.length)}
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition-colors"
+        >
+          <ArrowRight size={24} />
+        </button>
+        
+        {/* Slide indicators */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+          {slideshowImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-3 h-3 rounded-full transition-colors ${index === currentSlide ? 'bg-yellow-500' : 'bg-white/50'}`}
+            />
+          ))}
         </div>
-        <!-- MODAL DE IMAGEN DE PLATO -->
-        <div id="dish-image-modal" class="fixed inset-0 z-[60] bg-black/95 hidden items-center justify-center p-4 backdrop-blur-sm" onclick="closeDishImageModal()">
-            <div class="relative max-w-3xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
-                <button class="absolute -top-12 right-0 text-white hover:text-unagui-orange transition-colors" onclick="closeDishImageModal()">
-                    <i data-lucide="x" class="w-10 h-10"></i>
-                </button>
-                <img id="modal-dish-img" src="" alt="Plato" class="rounded-lg shadow-2xl border-2 border-unagui-orange max-h-[80vh] object-contain w-full bg-unagui-charcoal">
-                <h3 id="modal-dish-title" class="text-2xl font-bold text-white mt-4 text-center"></h3>
-            </div>
+      </div>
+      
+      {/* Hero content */}
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-6xl font-bold text-yellow-500 mb-4" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+            Calle Brava
+          </h1>
+          <p className="text-xl md:text-2xl text-white mb-8">
+            La mejor comida callejera urbana en la ciudad
+          </p>
+          <button
+            onClick={() => setCurrentSection('menu')}
+            className="bg-yellow-500 text-black px-8 py-3 rounded-full text-xl font-bold hover:bg-yellow-600 transition-colors transform hover:scale-105"
+          >
+            Hacer Pedido
+          </button>
         </div>
+        
+        {/* Social media icons */}
+        <div className="flex justify-center space-x-6 mt-8">
+          <a href="#" className="text-white hover:text-yellow-500 transition-colors">
+            <Facebook size={24} />
+          </a>
+          <a href="#" className="text-white hover:text-yellow-500 transition-colors">
+            <Instagram size={24} />
+          </a>
+          <a href="#" className="text-white hover:text-yellow-500 transition-colors">
+            <Twitter size={24} />
+          </a>
+        </div>
+      </div>
     </div>
-    <!-- MENÚ LATERAL (DRAWER) -->
-    <div id="nav-modal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" onclick="toggleNavModal(false, event)">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"></div>
-        <div class="fixed inset-y-0 right-0 flex max-w-full pl-10 pointer-events-none">
-            <div id="nav-panel" class="w-screen max-w-xs pointer-events-auto bg-unagui-charcoal nav-modal-slide-out flex flex-col shadow-xl border-l border-gray-800">
-                <div class="flex items-center justify-between px-4 py-6 border-b border-gray-700 bg-unagui-deep-black">
-                    <h2 id="nav-title" class="text-lg font-bold text-unagui-orange">Menú y Contacto</h2>
-                    <button type="button" class="text-gray-400 hover:text-white" onclick="toggleNavModal(false)">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
+  );
+
+  // Menu section
+  const MenuSection = () => (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black pt-20 pb-20">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-yellow-500 mb-8 text-center" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+          Nuestro Menú
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {menuCategories.map((category) => (
+            <motion.div
+              key={category.id}
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-black/50 rounded-xl p-6 border-2 border-transparent hover:border-yellow-500 transition-all cursor-pointer"
+              onClick={() => setSelectedCategory(category)}
+              style={{ backgroundColor: `${category.color}10`, borderColor: category.color }}
+            >
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center mr-3">
+                  <Star size={16} className="text-black" />
                 </div>
-                <div class="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-                    <button onclick="showSedeSelection(); toggleNavModal(false);" class="flex items-center w-full p-3 rounded-lg text-gray-200 hover:bg-gray-800 transition-colors">
-                        <i data-lucide="map-pin" class="w-5 h-5 mr-3 text-unagui-orange"></i>
-                        <span id="nav-change-sede">Cambiar de Sede</span>
-                    </button>
-                    <div class="border-t border-gray-700 my-4"></div>
-                    <p id="nav-contact-title" class="text-xs text-gray-500 uppercase tracking-wider mb-2 font-semibold">Contacta con la Sede</p>
-                    <a id="whatsapp-link" href="#" target="_blank" class="flex items-center w-full p-3 rounded-lg text-gray-200 hover:bg-gray-800 transition-colors">
-                        <i data-lucide="message-circle" class="w-5 h-5 mr-3 text-green-500"></i>
-                        <span id="nav-whatsapp">WhatsApp Directo</span>
-                    </a>
-                    <a id="location-link" href="#" target="_blank" class="flex items-center w-full p-3 rounded-lg text-gray-200 hover:bg-gray-800 transition-colors">
-                        <i data-lucide="navigation" class="w-5 h-5 mr-3 text-blue-500"></i>
-                        <span id="nav-location">Ver Ubicación</span>
-                    </a>
-                    <a id="instagram-link" href="https://www.instagram.com/unaguisushi_/" target="_blank" class="flex items-center w-full p-3 rounded-lg text-gray-200 hover:bg-gray-800 transition-colors">
-                        <i data-lucide="instagram" class="w-5 h-5 mr-3 text-pink-500"></i>
-                        <span id="nav-instagram">Instagram</span>
-                    </a>
-                </div>
-            </div>
+                <h3 className="text-xl font-bold text-white" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+                  {category.name}
+                </h3>
+              </div>
+              <p className="text-gray-300 mb-4">
+                {category.items.length} productos disponibles
+              </p>
+              <div className="flex justify-between items-center">
+                <span className="text-yellow-500 font-bold">Ver productos</span>
+                <ArrowRight size={20} className="text-yellow-500" />
+              </div>
+            </motion.div>
+          ))}
         </div>
+      </div>
     </div>
-    <!-- MODAL DE PROMOCIÓN -->
-    <div id="promo-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onclick="closePromoModal()">
-        <div id="promo-card" class="w-full max-w-sm bg-unagui-charcoal rounded-xl shadow-2xl border-2 border-unagui-orange/80 overflow-hidden promo-modal-enter" onclick="event.stopPropagation()">
-            <div class="relative h-40 bg-gray-800 flex items-center justify-center">
-                <img id="promo-img" src="" alt="Promoción Destacada" class="w-full h-full object-cover opacity-70">
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <span id="promo-offer" class="text-3xl font-bold text-white tracking-widest uppercase">¡OFERTA!</span>
-                </div>
-            </div>
-            <div class="p-5">
-                <div class="flex items-center justify-between mb-2">
-                    <h4 id="promo-title" class="text-xl font-extrabold text-unagui-orange leading-tight"></h4>
-                    <span id="promo-price" class="text-xl font-bold text-white bg-unagui-orange/20 px-3 py-1 rounded-full"></span>
-                </div>
-                <p id="promo-description" class="text-sm text-gray-300 mb-4"></p>
-                <div class="flex justify-end space-x-3">
-                    <button onclick="closePromoModal()" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">
-                        <span id="promo-close">Cerrar</span>
-                    </button>
-                    <button onclick="closePromoModal(); scrollToCategoryPromo()" class="px-4 py-2 bg-unagui-orange text-black font-semibold rounded-lg hover:bg-unagui-orange-light transition-colors text-sm">
-                        <span id="promo-details">Ver Detalles</span>
-                    </button>
-                </div>
-            </div>
+  );
+
+  // Category detail view
+  const CategoryDetailView = ({ category }) => (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black pt-20 pb-20">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center mb-6">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className="mr-4 text-white hover:text-yellow-500 transition-colors"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <h2 className="text-3xl md:text-4xl font-bold text-yellow-500" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+            {category.name}
+          </h2>
         </div>
-    </div>
-    <script>
-        // --- TRADUCCIONES COMPLETAS ---
-        const translations = {
-            es: {
-                welcomeTitle: "Bienvenido",
-                welcomeSubtitle: "Selecciona tu sede para ver el menú",
-                menuAndContact: "Menú y Contacto",
-                changeSede: "Cambiar de Sede",
-                contactTitle: "Contacta con la Sede",
-                whatsapp: "WhatsApp Directo",
-                location: "Ver Ubicación",
-                instagram: "Instagram",
-                offer: "¡OFERTA!",
-                promoClose: "Cerrar",
-                promoDetails: "Ver Detalles",
-                footer: "UNAGUI, todos los derechos reservados.",
-                sedeNames: {
-                    "Sede Los Cocos": "Sede Los Cocos",
-                    "Sede Aluna Plaza": "Sede Aluna Plaza"
-                }
-            },
-            en: {
-                welcomeTitle: "Welcome",
-                welcomeSubtitle: "Select your location to view the menu",
-                menuAndContact: "Menu & Contact",
-                changeSede: "Change Location",
-                contactTitle: "Contact the Location",
-                whatsapp: "Direct WhatsApp",
-                location: "View Location",
-                instagram: "Instagram",
-                offer: "SPECIAL OFFER!",
-                promoClose: "Close",
-                promoDetails: "View Details",
-                footer: "UNAGUI, all rights reserved.",
-                sedeNames: {
-                    "Sede Los Cocos": "Los Cocos Branch",
-                    "Sede Aluna Plaza": "Aluna Plaza Branch"
-                }
-            }
-        };
-
-        // --- PROMOCIONES POR SEDE (EN AMBOS IDIOMAS) ---
-        const promotionsBySede = {
-            "Sede Los Cocos": {
-                es: {
-                    title: "RAMEN UNAGUI",
-                    description: "¡Prueba nuestro plato nuevo! Descubre nuestro nuevo ramen al estilo unagui: fideos en un fondo delicado con cerdo o pollo, huevo, tofu y nori, un plato reconfortante que despierta todos tus sentidos.",
-                    price: " $ 40.000"
-                },
-                en: {
-                    title: "UNAGUI RAMEN",
-                    description: "Try our new dish! Discover our new Unagui-style ramen: noodles in a delicate broth with pork or chicken, egg, tofu, and nori – a comforting dish that awakens all your senses.",
-                    price: " $40,000"
-                },
-                image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Ramen%20(2).jpg?raw=true"
-            },
-            "Sede Aluna Plaza": {
-                es: {
-                    title: "RAMEN MIXTO UNAGUI",
-                    description: "Delicioso ramen con fondo casero, fideos, cerdo o pollo, huevo, soya, tofu y nori. ¡Una experiencia gastronómica única!",
-                    price: " $ 50.000"
-                },
-                en: {
-                    title: "UNAGUI MIXED RAMEN",
-                    description: "Delicious ramen with house-made broth, noodles, pork or chicken, egg, soy, tofu, and nori. A unique culinary experience!",
-                    price: " $50,000"
-                },
-                image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Ramen%20(2).jpg?raw=true"
-            }
-        };
-
-        // --- DETALLES DE SEDES ---
-        const sedeDetails = {
-            "Sede Los Cocos": {
-                whatsapp: "573233225787",
-                direccion: "cr 1c#24-04, Santa Marta",
-                displayNumber: "+57 323 322 5787",
-                instagram: "https://www.instagram.com/unaguisushi_/"
-            },
-            "Sede Aluna Plaza": {
-                whatsapp: "573107137496",
-                direccion: "Aluna Plaza, Santa Marta",
-                displayNumber: "+57 310 713 7496",
-                instagram: "https://www.instagram.com/unaguisushi_/"
-            }
-        };
-
-        // --- MENÚS POR SEDE Y CATEGORÍAS TRADUCIBLES ---
-        const menuDataLosCocos = {
-            es: {
-                "Cocteles de Autor": [
-                    { name: "TOKYO SMOKE", description: "Mezcal Ojo de Tigre, zumo de limón, miel y té verde.", price: 40, icon: "cigarette", image: null },
-                    { name: "MIDORI BASIL", description: "Gin Beefeater, licor de melón, limón, albahaca y sirope canela.", price: 40, icon: "leaf", image: null },
-                    { name: "ISABELLA MOJITO", description: "Vodka Absolut, agraz, uvas isabellas, limón, hierbabuena.", price: 28, icon: "grape", image: null },
-                    { name: "BUTTERFLY PEA", description: "Vodka Absolut, limón, sirope lyche, soda y té mariposa.", price: 28, icon: "flower", image: null },
-                    { name: "MIYAKO ISLAND", description: "Gin Beefeater, proseco, curazao, limón y soda.", price: 45, icon: "palmtree", image: null },
-                ],
-                "Cocteles Clásicos": [
-                    { name: "MOJITO CLÁSICO", description: "Ron Santero 3 años, limón, hierbabuena, soda.", price: 23, icon: "glass-water", image: null },
-                    { name: "MOJITO FRUTA", description: "Maracuyá o Corozo. Ron Santero, limón, hierbabuena, soda.", price: 25, icon: "citrus", image: null },
-                    { name: "MARGARITA CLÁSICA", description: "Tequila Olmeca, triple sec, zumo de limón.", price: 25, icon: "glass-water", image: null },
-                    { name: "MARGARITA FRUTA", description: "Maracuyá o Corozo. Tequila Olmeca, triple sec, limón.", price: 27, icon: "citrus", image: null },
-                    { name: "GIN TONIC", description: "Ginebra, tónica, cascos de limón.", price: 22, icon: "glass-water", image: null },
-                    { name: "MOSCOW MULE", description: "Vodka Absolut, sirope jengibre, limón, soda.", price: 25, icon: "glass-water", image: null },
-                ],
-                "Cocteles Premium": [
-                    { name: "MARGARITA PATRÓN", description: "Tequila Patrón, triple sec, limón, sirope simple.", price: 40, icon: "star", image: null },
-                    { name: "MARGARITA DON JULIO", description: "Tequila Don Julio, triple sec, limón, sirope fruta.", price: 40, icon: "star", image: null },
-                    { name: "GIN TONIC BEEFEATER", description: "Ginebra Beefeater, tónica, limón, romero.", price: 37, icon: "star", image: null },
-                    { name: "GIN TONIC BOMBAY", description: "Ginebra Bombay, tónica, limón, pimienta.", price: 37, icon: "star", image: null },
-                    { name: "PALOMA OAXACA", description: "Mezcal Ojo de Tigre, limón, gaseosa toronja.", price: 40, icon: "star", image: null },
-                ],
-                "Sangrías y Seltzers": [
-                    { name: "SANGRÍA DE LA CASA", description: "Vino tinto, piña, naranja, limón, manzana, Ron, Ginger Ale.", price: 25, icon: "wine", image: null },
-                    { name: "LYCHEE SELTZER", description: "Lit Seltzer Lychee, agraz, uvas isabellas, paleta de fresa.", price: 30, icon: "sparkles", image: null },
-                ],
-                "Tragos": [
-                    { name: "RON HECHICERA", description: "Trago de Ron.", price: 40, icon: "glass-water", image: null },
-                    { name: "RON ZACAPA AMBAR", description: "Trago de Ron.", price: 35, icon: "glass-water", image: null },
-                    { name: "TEQUILA PATRÓN REP.", description: "Trago de Tequila.", price: 40, icon: "glass-water", image: null },
-                    { name: "TEQUILA DON JULIO REP.", description: "Trago de Tequila.", price: 37, icon: "glass-water", image: null },
-                    { name: "WHISKY GLENLIVET", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "WHISKY CHIVAS EXTRA", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "JACK DANIEL'S", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "BUCHANANS MASTER", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "MEZCAL OJO DE TIGRE", description: "Trago de Mezcal.", price: 30, icon: "glass-water", image: null },
-                ],
-                "Cervezas": [
-                    { name: "STELLA", description: "Cerveza.", price: 18, icon: "beer", image: null },
-                    { name: "CORONITA", description: "Cerveza.", price: 15, icon: "beer", image: null },
-                    { name: "CERVEZA ASAHI", description: "Cerveza Japonesa.", price: 18, icon: "beer", image: null },
-                    { name: "CERVEZA MODELO", description: "Cerveza.", price: 15, icon: "beer", image: null },
-                ],
-                "Limonadas y Sodas": [
-                    { name: "LIMONADA COCO", description: "Refrescante limonada de coco.", price: 15, icon: "citrus", image: null },
-                    { name: "LIMONADA HIERBABUENA", description: "Refrescante.", price: 15, icon: "leaf", image: null },
-                    { name: "LIMONADA JENGIBRE", description: "Refrescante.", price: 15, icon: "citrus", image: null },
-                    { name: "LIMONADA VINO", description: "Con un toque de vino.", price: 20, icon: "wine", image: null },
-                    { name: "SODA MARACUYA", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA COROZO", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA PANELA", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA LYCHEE", description: "Soda Artesanal.", price: 20, icon: "cup-soda", image: null },
-                ],
-                "Soft Drinks": [
-                    { name: "AGUA SIN GAS", description: "Botella.", price: 5, icon: "droplet", image: null },
-                    { name: "BRETAÑA", description: "Botella.", price: 5, icon: "droplet", image: null },
-                    { name: "CANADA DRY", description: "Botella.", price: 5, icon: "droplet", image: null },
-                    { name: "COCA COLA", description: "Original.", price: 5, icon: "droplet", image: null },
-                    { name: "COCA COLA ZERO", description: "Sin azúcar.", price: 5, icon: "droplet", image: null },
-                ],
-                "Entradas": [
-                    { name: "LANGOSTINOS CHUNEIT", description: "Tempura en salsa cremosa Chuneit (Agridulces).", price: 40, icon: "shrimp", image: null },
-                    { name: "ROLLOS PRIMAVERA", description: "Langostino, cangrejo vapor, vegetales en papel de arroz.", price: 30, icon: "scroll", image: null },
-                    { name: "NEGUI CRUNCH", description: "Bocados salmón, arroz con crunch y ensalada cangrejo.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA CRISPY RICE", description: "Arroz crujiente, mousse aguacate y tartar de atún.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA TATAKI", description: "Atún sellado con sésamo sobre salsa ponzu.", price: 40, icon: "fish", image: null },
-                    { name: "EDAMAME", description: "Frijoles de soja.", price: 18, icon: "bean", image: null },
-                    { name: "GYOSAS", description: "Empanaditas vapor rellenas de cerdo y vegetales.", price: 25, icon: "dumpling", image: null },
-                    { name: "KANI SALAD", description: "Mezcla Kani, cebollín, dinamita, crunch y salsa Unagui.", price: 40, icon: "salad", image: null },
-                    { name: "KUSHIYAKI", description: "Pinchos lomo fino marinados sésamo y teriyaki.", price: 28, icon: "utensils-crossed", image: null },
-                    { name: "YAKITORI", description: "Pinchos pollo marinados sésamo y teriyaki.", price: 24, icon: "utensils-crossed", image: null },
-                ],
-                "Niguiris": [
-                    { name: "NIGUIRI SAKE", description: "Salmón natural y arroz.", price: 20, icon: "fish", image: null },
-                    { name: "NIGUIRI UNAGUI", description: "Anguila ahumada y arroz.", price: 25, icon: "fish", image: null },
-                    { name: "NIGUIRI MAGURO", description: "Atún natural y arroz.", price: 22, icon: "fish", image: null },
-                    { name: "NIGUIRI HAMACHI", description: "Atún aleta amarilla y arroz.", price: 30, icon: "fish", image: null },
-                    { name: "NIGUIRI IKURA", description: "Huevas de salmón.", price: 45, icon: "circle-dot", image: null },
-                    { name: "NIGUIRI MASAGO", description: "Huevas de cangrejo.", price: 25, icon: "circle-dot", image: null },
-                ],
-                "Sashimi": [
-                    { name: "SASHIMI ATÚN", description: "4 piezas de cortes frescos.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "SASHIMI SALMÓN", description: "4 piezas de cortes frescos.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "SASHIMI HAMACHI", description: "4 piezas de cortes frescos.", price: 60, icon: "fish-symbol", image: null },
-                ],
-                "Rolls Especiales": [
-                    { name: "UNAGUI ESPECIAL ROLL", description: "Cangrejo, salmón, queso crema, topping anguila flambeada.", price: 60, icon: "disc", image: null },
-                    { name: "DIPSALMON", description: "Langostino tempura, cangrejo, queso, topping salmón.", price: 60, icon: "disc", image: null },
-                    { name: "OVALLE ROLL", description: "Langostinos empanizados, queso, topping tartar atún.", price: 48, icon: "disc", image: null },
-                    { name: "NIGUI ROLL", description: "Salmón natural, arroz, crunch y ensalada cangrejo.", price: 48, icon: "disc", image: null },
-                    { name: "UNAGUI ROLL", description: "Anguila, langostino empanizado, queso, topping cangrejo.", price: 50, icon: "disc", image: null },
-                    { name: "TATAKI ROLL", description: "Salmón, queso, aguacate, topping tataki atún.", price: 48, icon: "disc", image: null },
-                    { name: "EXPLOSIÓN", description: "Langostino tempura, cangrejo, queso, topping atún.", price: 50, icon: "disc", image: null },
-                    { name: "RAINBOW (NATURAL)", description: "Atún, salmón, tilapia, aguacate.", price: 45, icon: "disc", image: null },
-                    { name: "OSAKA FRAIN (NATURAL)", description: "Rollo sin arroz. Salmón, atún, tilapia, cangrejo.", price: 50, icon: "disc", image: null },
-                    { name: "TUNA SPICE MAKI", description: "Natural. Atún, crunch, aguacate, sriracha.", price: 40, icon: "disc", image: null },
-                    { name: "SALMON ESPECIAL", description: "Natural. Salmón, crunch, cebollín, masago.", price: 35, icon: "disc", image: null },
-                    { name: "TEMPURA CRUNCH", description: "Anguila, cangrejo empanizado, tilapia, salmón, queso.", price: 55, icon: "disc", image: null },
-                ],
-                "Rolls Tempura y Clásicos": [
-                    { name: "VOLCANO", description: "Salmón, langostino empanizado, queso, topping cangrejo.", price: 55, icon: "flame", image: null },
-                    { name: "TIGGER ESPECIAL", description: "Salmón, queso, aguacate, topping cangrejo gratinado.", price: 55, icon: "flame", image: null },
-                    { name: "LATIN ROLL", description: "Langostino empanizado, aguacate, queso, topping plátano.", price: 45, icon: "banana", image: null },
-                    { name: "OJO DE TIGRE", description: "Salmón, atún, cangrejo empanizado, queso, salsa dinamita.", price: 55, icon: "eye", image: null },
-                    { name: "FUGI ROLL", description: "Salmón, queso, topping Kakiague y langostinos tempura.", price: 50, icon: "mountain", image: null },
-                    { name: "SKIN TEMPURA", description: "Langostino empanizado, piel salmón crocante.", price: 45, icon: "layers", image: null },
-                    { name: "ALASKA ROLL", description: "Clásico. Salmón, queso crema, aguacate, ajonjolí.", price: 30, icon: "snowflake", image: null },
-                    { name: "CALIFORNIA ROLL", description: "Clásico. Cangrejo, aguacate, pepino, masago.", price: 30, icon: "sun", image: null },
-                ]
-            },
-            en: {
-                "Signature Cocktails": [
-                    { name: "TOKYO SMOKE", description: "Ojo de Tigre Mezcal, lemon juice, honey, and green tea.", price: 40, icon: "cigarette", image: null },
-                    { name: "MIDORI BASIL", description: "Beefeater Gin, melon liqueur, lemon, basil, and cinnamon syrup.", price: 40, icon: "leaf", image: null },
-                    { name: "ISABELLA MOJITO", description: "Absolut Vodka, agraz, Isabella grapes, lemon, mint.", price: 28, icon: "grape", image: null },
-                    { name: "BUTTERFLY PEA", description: "Absolut Vodka, lemon, lychee syrup, soda, and butterfly pea tea.", price: 28, icon: "flower", image: null },
-                    { name: "MIYAKO ISLAND", description: "Beefeater Gin, prosecco, curaçao, lemon, and soda.", price: 45, icon: "palmtree", image: null },
-                ],
-                "Classic Cocktails": [
-                    { name: "CLASSIC MOJITO", description: "Santero 3-year Rum, lemon, mint, soda.", price: 23, icon: "glass-water", image: null },
-                    { name: "FRUIT MOJITO", description: "Passion fruit or Corozo. Santero Rum, lemon, mint, soda.", price: 25, icon: "citrus", image: null },
-                    { name: "CLASSIC MARGARITA", description: "Olmeca Tequila, triple sec, lemon juice.", price: 25, icon: "glass-water", image: null },
-                    { name: "FRUIT MARGARITA", description: "Passion fruit or Corozo. Olmeca Tequila, triple sec, lemon.", price: 27, icon: "citrus", image: null },
-                    { name: "GIN TONIC", description: "Gin, tonic, lemon peels.", price: 22, icon: "glass-water", image: null },
-                    { name: "MOSCOW MULE", description: "Absolut Vodka, ginger syrup, lemon, soda.", price: 25, icon: "glass-water", image: null },
-                ],
-                "Premium Cocktails": [
-                    { name: "PATRÓN MARGARITA", description: "Patrón Tequila, triple sec, lemon, simple syrup.", price: 40, icon: "star", image: null },
-                    { name: "DON JULIO MARGARITA", description: "Don Julio Tequila, triple sec, lemon, fruit syrup.", price: 40, icon: "star", image: null },
-                    { name: "BEEFEATER GIN TONIC", description: "Beefeater Gin, tonic, lemon, rosemary.", price: 37, icon: "star", image: null },
-                    { name: "BOMBAY GIN TONIC", description: "Bombay Gin, tonic, lemon, pepper.", price: 37, icon: "star", image: null },
-                    { name: "OAXACA PALOMA", description: "Ojo de Tigre Mezcal, lemon, grapefruit soda.", price: 40, icon: "star", image: null },
-                ],
-                "Sangrias & Seltzers": [
-                    { name: "HOUSE SANGRIA", description: "Red wine, pineapple, orange, lemon, apple, rum, ginger ale.", price: 25, icon: "wine", image: null },
-                    { name: "LYCHEE SELTZER", description: "Lychee Seltzer, agraz, Isabella grapes, strawberry popsicle.", price: 30, icon: "sparkles", image: null },
-                ],
-                "Spirits": [
-                    { name: "RON HECHICERA", description: "Rum shot.", price: 40, icon: "glass-water", image: null },
-                    { name: "RON ZACAPA AMBAR", description: "Rum shot.", price: 35, icon: "glass-water", image: null },
-                    { name: "TEQUILA PATRÓN REP.", description: "Tequila shot.", price: 40, icon: "glass-water", image: null },
-                    { name: "TEQUILA DON JULIO REP.", description: "Tequila shot.", price: 37, icon: "glass-water", image: null },
-                    { name: "WHISKY GLENLIVET", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "WHISKY CHIVAS EXTRA", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "JACK DANIEL'S", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "BUCHANANS MASTER", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "MEZCAL OJO DE TIGRE", description: "Mezcal shot.", price: 30, icon: "glass-water", image: null },
-                ],
-                "Beers": [
-                    { name: "STELLA", description: "Beer.", price: 18, icon: "beer", image: null },
-                    { name: "CORONITA", description: "Beer.", price: 15, icon: "beer", image: null },
-                    { name: "ASAHI BEER", description: "Japanese Beer.", price: 18, icon: "beer", image: null },
-                    { name: "MODELO BEER", description: "Beer.", price: 15, icon: "beer", image: null },
-                ],
-                "Lemonades & Sodas": [
-                    { name: "COCONUT LEMONADE", description: "Refreshing coconut lemonade.", price: 15, icon: "citrus", image: null },
-                    { name: "MINT LEMONADE", description: "Refreshing.", price: 15, icon: "leaf", image: null },
-                    { name: "GINGER LEMONADE", description: "Refreshing.", price: 15, icon: "citrus", image: null },
-                    { name: "WINE LEMONADE", description: "With a hint of wine.", price: 20, icon: "wine", image: null },
-                    { name: "PASSION FRUIT SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "COROZO SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "PANELA SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "LYCHEE SODA", description: "Artisanal soda.", price: 20, icon: "cup-soda", image: null },
-                ],
-                "Soft Drinks": [
-                    { name: "STILL WATER", description: "Bottle.", price: 5, icon: "droplet", image: null },
-                    { name: "BRETAÑA", description: "Bottle.", price: 5, icon: "droplet", image: null },
-                    { name: "CANADA DRY", description: "Bottle.", price: 5, icon: "droplet", image: null },
-                    { name: "COCA COLA", description: "Original.", price: 5, icon: "droplet", image: null },
-                    { name: "COCA COLA ZERO", description: "Sugar-free.", price: 5, icon: "droplet", image: null },
-                ],
-                "Appetizers": [
-                    { name: "CHUNEIT SHRIMP", description: "Tempura in creamy Chuneit sauce (sweet & sour).", price: 40, icon: "shrimp", image: null },
-                    { name: "SPRING ROLLS", description: "Shrimp, steamed crab, vegetables in rice paper.", price: 30, icon: "scroll", image: null },
-                    { name: "NEGUI CRUNCH", description: "Salmon bites, crunchy rice, crab salad.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA CRISPY RICE", description: "Crispy rice, avocado mousse, tuna tartare.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA TATAKI", description: "Sesame-seared tuna over ponzu sauce.", price: 40, icon: "fish", image: null },
-                    { name: "EDAMAME", description: "Soy beans.", price: 18, icon: "bean", image: null },
-                    { name: "GYOZAS", description: "Steamed dumplings filled with pork and vegetables.", price: 25, icon: "dumpling", image: null },
-                    { name: "KANI SALAD", description: "Crab mix, scallions, dynamite, crunch, Unagui sauce.", price: 40, icon: "salad", image: null },
-                    { name: "KUSHIYAKI", description: "Fine beef skewers marinated in sesame and teriyaki.", price: 28, icon: "utensils-crossed", image: null },
-                    { name: "YAKITORI", description: "Chicken skewers marinated in sesame and teriyaki.", price: 24, icon: "utensils-crossed", image: null },
-                ],
-                "Nigiris": [
-                    { name: "SAKE NIGIRI", description: "Natural salmon and rice.", price: 20, icon: "fish", image: null },
-                    { name: "UNAGUI NIGIRI", description: "Smoked eel and rice.", price: 25, icon: "fish", image: null },
-                    { name: "MAGURO NIGIRI", description: "Natural tuna and rice.", price: 22, icon: "fish", image: null },
-                    { name: "HAMACHI NIGIRI", description: "Yellowfin tuna and rice.", price: 30, icon: "fish", image: null },
-                    { name: "IKURA NIGIRI", description: "Salmon roe.", price: 45, icon: "circle-dot", image: null },
-                    { name: "MASAGO NIGIRI", description: "Crab roe.", price: 25, icon: "circle-dot", image: null },
-                ],
-                "Sashimi": [
-                    { name: "TUNA SASHIMI", description: "4 pieces of fresh cuts.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "SALMON SASHIMI", description: "4 pieces of fresh cuts.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "HAMACHI SASHIMI", description: "4 pieces of fresh cuts.", price: 60, icon: "fish-symbol", image: null },
-                ],
-                "Special Rolls": [
-                    { name: "UNAGUI SPECIAL ROLL", description: "Crab, salmon, cream cheese, flambéed eel topping.", price: 60, icon: "disc", image: null },
-                    { name: "DIPSALMON", description: "Shrimp tempura, crab, cheese, salmon topping.", price: 60, icon: "disc", image: null },
-                    { name: "OVALLE ROLL", description: "Breaded shrimp, cheese, tuna tartare topping.", price: 48, icon: "disc", image: null },
-                    { name: "NIGUI ROLL", description: "Natural salmon, rice, crunch, crab salad.", price: 48, icon: "disc", image: null },
-                    { name: "UNAGUI ROLL", description: "Eel, breaded shrimp, cheese, crab topping.", price: 50, icon: "disc", image: null },
-                    { name: "TATAKI ROLL", description: "Salmon, cheese, avocado, tuna tataki topping.", price: 48, icon: "disc", image: null },
-                    { name: "EXPLOSION", description: "Shrimp tempura, crab, cheese, tuna topping.", price: 50, icon: "disc", image: null },
-                    { name: "RAINBOW (NATURAL)", description: "Tuna, salmon, tilapia, avocado.", price: 45, icon: "disc", image: null },
-                    { name: "OSAKA FRAIN (NATURAL)", description: "Riceless roll. Salmon, tuna, tilapia, crab.", price: 50, icon: "disc", image: null },
-                    { name: "TUNA SPICE MAKI", description: "Natural. Tuna, crunch, avocado, sriracha.", price: 40, icon: "disc", image: null },
-                    { name: "SALMON SPECIAL", description: "Natural. Salmon, crunch, scallions, masago.", price: 35, icon: "disc", image: null },
-                    { name: "TEMPURA CRUNCH", description: "Eel, breaded crab, tilapia, salmon, cheese.", price: 55, icon: "disc", image: null },
-                ],
-                "Tempura & Classic Rolls": [
-                    { name: "VOLCANO", description: "Salmon, breaded shrimp, cheese, crab topping.", price: 55, icon: "flame", image: null },
-                    { name: "TIGGER SPECIAL", description: "Salmon, cheese, avocado, baked crab topping.", price: 55, icon: "flame", image: null },
-                    { name: "LATIN ROLL", description: "Breaded shrimp, avocado, cheese, ripe banana topping.", price: 45, icon: "banana", image: null },
-                    { name: "TIGER'S EYE", description: "Salmon, tuna, breaded crab, cheese, dynamite sauce.", price: 55, icon: "eye", image: null },
-                    { name: "FUGI ROLL", description: "Salmon, cheese, Kakiague topping, shrimp tempura.", price: 50, icon: "mountain", image: null },
-                    { name: "SKIN TEMPURA", description: "Breaded shrimp, crispy salmon skin.", price: 45, icon: "layers", image: null },
-                    { name: "ALASKA ROLL", description: "Classic. Salmon, cream cheese, avocado, sesame.", price: 30, icon: "snowflake", image: null },
-                    { name: "CALIFORNIA ROLL", description: "Classic. Crab, avocado, cucumber, masago.", price: 30, icon: "sun", image: null },
-                ]
-            }
-        };
-
-        const menuDataAlunaPlaza = {
-            es: {
-                "Cocteles de Autor": [
-                    { name: "UNAGUI VOLCAN (NEW)", description: "Ron añejo, sirope de frutos rojos y maracuyá, zumo de limón.", price: 35, icon: "volcano", image: null },
-                    { name: "SUKURA FLOWER (NEW)", description: "Tequila blanco, curazao, sirope panela, zumo de limón, maracuyá y lyche.", price: 35, icon: "flower", image: null },
-                    { name: "TOKYO SMOKE", description: "Mezcal Ojo de Tigre, zumo de limón, miel y té verde.", price: 40, icon: "cigarette", image: null },
-                    { name: "MIDORI BASIL", description: "Ginebra, licor de melón, zumo de limón, albahaca y sirope de canela.", price: 35, icon: "leaf", image: null },
-                    { name: "ISABELLA MOJITO", description: "Vodka Absolut, agraz, uvas isabellas, limón Tahiti, hierbabuena y azúcar.", price: 28, icon: "grape", image: null },
-                    { name: "BUTTERFLY PEA", description: "Absolut Vodka, zumo de limón, sirope lyche, sirope simple, soda y té mariposa.", price: 28, icon: "flower", image: null },
-                    { name: "MIYAKO ISLAND", description: "Ginebra, proseco, curazao, zumo de limón y soda.", price: 38, icon: "palmtree", image: null },
-                ],
-                "Cocteles Clásicos": [
-                    { name: "MOJITO CLÁSICO", description: "Ron Santero 3 años, limón Tahiti, hierbabuena, sirope simple, soda.", price: 23, icon: "glass-water", image: null },
-                    { name: "MOJITO FRUTA (MARACUYA O COROZO)", description: "Ron Santero 3 años, limón Tahiti, hierbabuena, sirope fruta, soda.", price: 25, icon: "citrus", image: null },
-                    { name: "MARGARITA CLÁSICA", description: "Tequila Olmeca, triple sec, limón Tahiti, sirope simple.", price: 25, icon: "glass-water", image: null },
-                    { name: "MARGARITA FRUTA (MARACUYA O COROZO)", description: "Tequila Olmeca, triple sec, limón Tahiti, sirope fruta.", price: 27, icon: "citrus", image: null },
-                    { name: "GIN TONIC", description: "Ginebra, tónica, cascos de limón.", price: 22, icon: "glass-water", image: null },
-                    { name: "MOSCOW MULE", description: "Vodka Absolut, sirope jengibre, limón Tahiti, soda.", price: 25, icon: "glass-water", image: null },
-                ],
-                "Cocteles Premium": [
-                    { name: "MARGARITA PATRÓN", description: "Tequila Patrón, triple sec, limón Tahiti, sirope simple.", price: 40, icon: "star", image: null },
-                    { name: "MARGARITA DON JULIO", description: "Tequila Don Julio, triple sec, limón Tahiti, sirope fruta.", price: 40, icon: "star", image: null },
-                    { name: "GIN TONIC BEEFEATER", description: "Ginebra Beefeater, tónica, limón, romero.", price: 37, icon: "star", image: null },
-                    { name: "GIN TONIC BOMBAY", description: "Ginebra Bombay, tónica, limón, pimienta.", price: 37, icon: "star", image: null },
-                    { name: "PALOMA OAXACA", description: "Mezcal Ojo de Tigre, limón Tahiti, gaseosa toronja.", price: 40, icon: "star", image: null },
-                ],
-                "Sangrías y Seltzers": [
-                    { name: "SANGRÍA DE LA CASA", description: "Vino tinto, piña, naranja, limón, manzana, Ron, Ginger Ale.", price: 25, icon: "wine", image: null },
-                    { name: "LYCHEE SELTZER", description: "Lit Seltzer Lychee, agraz, uvas isabellas, paleta de fresa.", price: 30, icon: "sparkles", image: null },
-                ],
-                "Tragos": [
-                    { name: "RON HECHICERA", description: "Trago de Ron.", price: 40, icon: "glass-water", image: null },
-                    { name: "RON ZACAPA AMBAR", description: "Trago de Ron.", price: 35, icon: "glass-water", image: null },
-                    { name: "TEQUILA PATRÓN REP.", description: "Trago de Tequila.", price: 40, icon: "glass-water", image: null },
-                    { name: "TEQUILA DON JULIO REP.", description: "Trago de Tequila.", price: 37, icon: "glass-water", image: null },
-                    { name: "WHISKY GLENLIVET", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "WHISKY CHIVAS EXTRA", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "JACK DANIEL'S", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "BUCHANANS MASTER", description: "Trago de Whisky.", price: 30, icon: "glass-water", image: null },
-                    { name: "BUCHANANS 18 AÑOS", description: "Trago de Whisky.", price: 50, icon: "glass-water", image: null },
-                    { name: "MEZCAL OJO DE TIGRE", description: "Trago de Mezcal.", price: 30, icon: "glass-water", image: null },
-                ],
-                "Cervezas": [
-                    { name: "STELLA", description: "Cerveza.", price: 18, icon: "beer", image: null },
-                    { name: "CORONITA", description: "Cerveza.", price: 15, icon: "beer", image: null },
-                    { name: "CERVEZA ASAHI", description: "Cerveza Japonesa.", price: 18, icon: "beer", image: null },
-                    { name: "CERVEZA MODELO", description: "Cerveza.", price: 15, icon: "beer", image: null },
-                ],
-                "Limonadas y Sodas": [
-                    { name: "LIMONADA COCO", description: "Refrescante limonada de coco.", price: 15, icon: "citrus", image: null },
-                    { name: "LIMONADA HIERBABUENA", description: "Refrescante.", price: 15, icon: "leaf", image: null },
-                    { name: "LIMONADA JENGIBRE", description: "Refrescante.", price: 15, icon: "citrus", image: null },
-                    { name: "LIMONADA VINO", description: "Con un toque de vino.", price: 20, icon: "wine", image: null },
-                    { name: "SODA MARACUYA", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA COROZO", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA PANELA", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA FLOR DE JAMAICA", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA FRUTOS ROJOS", description: "Soda Artesanal.", price: 15, icon: "cup-soda", image: null },
-                    { name: "SODA LYCHEE", description: "Soda Artesanal.", price: 20, icon: "cup-soda", image: null },
-                ],
-                "Soft Drinks": [
-                    { name: "AGUA SIN GAS", description: "Botella.", price: 7, icon: "droplet", image: null },
-                    { name: "AGUA CON GAS", description: "Botella.", price: 7, icon: "droplet", image: null },
-                    { name: "SODA", description: "Botella.", price: 7, icon: "droplet", image: null },
-                    { name: "CANADA DRY", description: "Botella.", price: 7, icon: "droplet", image: null },
-                    { name: "COCA COLA", description: "Original.", price: 7, icon: "droplet", image: null },
-                    { name: "COCA COLA ZERO", description: "Sin azúcar.", price: 7, icon: "droplet", image: null },
-                    { name: "CAFÉ AMERICANO", description: "Café de la sierra nevada.", price: 5, icon: "droplet", image: null },
-                ],
-                "Entradas": [
-                    { name: "KITOKUSHI MAGURO", description: "Rollitos de atún fresco rellenos de cangrejo trufado, queso crema y pepino, con masago, mantequilla de trufa, salsa anguila y dinamita.", price: 45, icon: "scroll", image: null },
-                    { name: "TIRADITO DE ATUN ", description: "Langostino, cangrejo vapor, vegetales en papel de arroz.Corte delicado de atún natural, sobre una salsa de frijol de soya infusionada con aceites y especias.", price: 40, icon: "scroll", image: null },
-                    { name: "ROLLOS PRIMAVERA", description: "Langostino, cangrejo vapor, vegetales en papel de arroz.", price: 30, icon: "scroll", image: null },
-                    { name: "ENSALDA UNAGUI", description: "Wakame fresco con cangrejo, cebollin, aguacate y masago, acompañado de crujientes bocados de salmón tempura rellenos de queso crema, masago y aguacate.", price: 38, icon: "shrimp", image: null },
-                    { name: "LANGOSTINOS CHUNEIT", description: "Langostinos tempura en salsa cremosa Chuneit (Agridulces).", price: 40, icon: "shrimp", image: null },
-                    { name: "NEGUI CRUNCH", description: "Bocados salmón, arroz con crunch y ensalada cangrejo.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA CRISPY RICE", description: "Arroz crujiente, mousse aguacate y tartar de atún.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA TATAKI", description: "Atún sellado con sésamo sobre salsa ponzu.", price: 40, icon: "fish", image: null },
-                    { name: "EDAMAME", description: "Vainas de soya salteadas con sal marina.", price: 18, icon: "bean", image: null },
-                    { name: "GYOSAS", description: "Empanaditas vapor rellenas de cerdo y vegetales.", price: 25, icon: "dumpling", image: null },
-                    { name: "ENSALADA NECTURNO", description: "Wakame con salmón y atún fresco, cangrejo, masago y cebollín, bañados en salsa de la casa.", price: 40, icon: "dumpling", image: null },
-                    { name: "KANI SALAD", description: "Mezcla Kani, cebollín, dinamita, crunch y salsa Unagui.", price: 40, icon: "salad", image: null },
-                    { name: "KUSHIYAKI", description: "Pinchos de lomo fino de res marinados en aceite de sésamo, jengibre, ajo y vinagre de arroz, con un glaseado de salsa teriyaki.", price: 28, icon: "utensils-crossed", image: null },
-                    { name: "YAKITORI", description: "Pinchos de pollo marinados y caramelizados en salsa teriyaki, con sésamo, jengibre, ajo y vinagre de arroz.", price: 24, icon: "utensils-crossed", image: null },
-                ],
-                "Niguiris": [
-                    { name: "NIGUIRI SAKE", description: "Salmón natural y arroz de sushi.", price: 20, icon: "fish", image: null },
-                    { name: "NIGUIRI UNAGUI", description: "Anguila ahumada y arroz de sushi.", price: 25, icon: "fish", image: null },
-                    { name: "NIGUIRI MAGURO", description: "Atún natural y arroz de sushi.", price: 22, icon: "fish", image: null },
-                    { name: "NIGUIRI HAMACHI", description: "Atún aleta amarilla y arroz de sushi.", price: 30, icon: "fish", image: null },
-                    { name: "NIGUIRI IKURA", description: "Huevas de salmón y arroz de sushi.", price: 45, icon: "circle-dot", image: null },
-                    { name: "NIGUIRI MASAGO", description: "Huevas de cangrejo y arroz de sushi.", price: 25, icon: "circle-dot", image: null },
-                ],
-                "Sashimi": [
-                    { name: "SASHIMI ATÚN", description: "4 piezas de cortes frescos.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "SASHIMI SALMÓN", description: "4 piezas de cortes frescos.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "SASHIMI HAMACHI", description: "4 piezas de cortes frescos.", price: 60, icon: "fish-symbol", image: null },
-                ],
-                "Rolls Especiales": [
-                    { name: "MAXI ROLL", description: "langostino y salmón tempura, cangrejo, wakame, queso crema, cebollín, masago en vuelto en papel de soya", price: 65, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Maxi%20roll.jpg?raw=true" },
-                    { name: "EMI ROLL", description: "palmito trufado, langostino tempura, queso crema y envuelto en papel de soya.", price: 55, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Emi%20roll.jpg?raw=true" },
-                    { name: "UNAGUI ESPECIAL ROLL", description: "Cangrejo, salmón, queso crema, topping anguila flambeada.", price: 60, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Unagui%20Especial%20Roll.JPG?raw=true" },
-                    { name: "DIPSALMON", description: "Langostino tempura, cangrejo, queso, topping salmón.", price: 60, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Dipsalmon%20Roll.JPG?raw=true" },
-                    { name: "OVALLE ROLL", description: "langostinos empanizados, queso crema, aguacate y topping de tartar de atún.", price: 48, icon: "disc", image: null },
-                    { name: "NIGUI ROLL", description: "Salmón natural, arroz, crunch y ensalada cangrejo.", price: 48, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Nigui%20Roll.JPG?raw=true" },
-                    { name: "VOLCANO", description: "salmón y langostino empanizado con queso crema, cubiertos con topping de cangrejo, wakame, masago, cebollín y spicy.", price: 55, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Volcano%20roll%20(1).jpg?raw=true" },
-                    { name: "TATAKI ROLL", description: "Salmón, queso crema, aguacate, topping tataki atún y mousse de aguacate..", price: 48, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Tataki%20Roll.JPG?raw=true"},
-                    { name: "UNAGUI ROLL", description: "anguila y langostinos empanizados con queso crema y cebollín, coronados con topping de cangrejo.", price: 50, icon: "disc", image: null },
-                    { name: "LATIN ROLL", description: "langostino empanizado, aguacate y queso crema, rematado con topping de plátano maduro.", price: 45, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Latin%20roll.jpg?raw=true" },
-                    { name: "EXPLOSIÓN", description: "langostino tempura, cangrejo y queso crema con pepino, coronado con topping de atún, aguacate y masago.", price: 50, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Explosion.jpg?raw=true" },
-                    { name: "OJO DE TIGRE", description: "salmón, atún y cangrejo empanizado con queso crema y aguacate, coronado con ajonjolí negro y salsa dinamita.", price: 55, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Ojo%20de%20Tigre%20Roll.JPG?raw=true" },
-                    { name: "FUGI ROLL", description: "Salmón natural con queso crema y cebollín, topping de kakiague y langostinos tempura.", price: 50, icon: "disc", image:"https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Fugi%20roll.jpg?raw=true" },
-                    { name: "CALIFORNIA ROLL (CLÁSICO)", description: "cangrejo, aguacate y pepino, coronado con masago y ajonjolí negro.", price: 30, icon: "sun", image: null },
-                ],
-                "Rolls Tempura": [
-                    { name: "TEMPURA CRONCH", description: "anguila, cangrejo empanizado, tilapia, salmón, cebollín, queso crema, masago y topping de cangrejo.", price: 55, icon: "flame", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Tempura%20crunch%20(1).jpg?raw=true" },
-                    { name: "SKIN TEMPURA", description: "langostinos empanizados con queso crema, piel de salmón crocante, aguacate, wakame y masago.", price: 45, icon: "flame", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Skin%20tempura%20(1).jpg?raw=true" },
-                    { name: "TIGGER ESPECIAL", description: "salmón, queso crema y aguacate, coronado con masago y topping de cangrejo gratinado.", price: 55, icon: "layers", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Tigger%20especial%20roll.jpg?raw=true" },
-                ],
-                "Rolls Natural": [
-                    { name: "VEGGIE ROLL (VEGANO)", description: "Pepino, espárrago, aguacate, wakame, zanahoria y ajonjolí.", price: 35, icon: "carrot", image: null },
-                    { name: "KIURI MAKI (NATURAL)", description: "Cama de pepino, salmón, atún, cangrejo, masago, queso crema, aguacate, acompañado de salsa ponzu.", price: 35, icon: "cucumber", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Kiuri%20Maki%20Natural%20Roll.JPG?raw=true" },
-                    { name: "RAINBOW (NATURAL)", description: "Atún, salmón, tilapia y aguacate, coronado con topping de atún, salmón, tilapia y aguacate.", price: 45, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Rainbow%20Roll.JPG?raw=true" },
-                    { name: "OSAKA FRAIN (NATURAL)", description: "Rollo de salmón sin arroz con atún, tilapia, cangrejo, aguacate, queso crema y masago.", price: 50, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Osaka%20Frain%20Roll.jpg?raw=true" },
-                    { name: "TUNA SPICE MAKI (NATURAL)", description: "atún, crunch, aguacate, sriracha, cebollín y masago.", price: 40, icon: "disc", image: null },
-                    { name: "SALMON ESPECIAL (NATURAL)", description: "Salmón, crunch, cebollín, masago y jengibre.", price: 35, icon: "disc", image: null },
-                    { name: "ALASKA ROLL (CLÁSICO)", description: "Salmón, queso crema, aguacate, ajonjolí.", price: 30, icon: "snowflake", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Alaska%20Roll%20(1).JPG?raw=true" },
-                ],
-                "Fuertes": [
-                    { name: "ARROZ YAKIMESHI", description: "Arroz frito con pollo, langostino, huevo, vegetales, salsa de soya y ajonjolí coronado con cebollin frito.", price: 40, icon: "rice-bowl", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Arroz%20yakimeshi.jpg?raw=true" },
-                    { name: "SALMÓN TERIYAKI", description: "salmón a la plancha con preparación al estilo teriyaki, acompañado de arroz oriental.", price: 50, icon: "fish", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Salm%C3%B3n%20teriyaki%20(1).jpg?raw=true" },
-                    { name: "YAKISOBA", description: "noodles salteados con pollo, lomo fino, langostinos y vegetales.", price: 40, icon: "steak", image: null },
-                    { name: "RAMEN AL ESTILO UNAGUI", description: "Fondo de la casa con fideos, cerdo o pollo, huevo, soya, tofu y nori.", price: 40, icon: "bone", image: null },
-                    { name: "RAMEN MIXTO UNAGUI", description: "Fondo de la casa con fideos, cerdo o pollo, huevo, soya, tofu y nori.", price: 50, icon: "bone", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Ramen%20(2).jpg?raw=true" },
-                    { name: "POKEN DE ATÚN", description: "Atún natural, langostino tempura, cangrejo, edamame, aguacate, pepino y batata.", price: 40, icon: "bone", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Poke%20de%20at%C3%BAn.jpg?raw=true" },
-                    { name: "POKEN DE SALMÓN", description: "Salmón natural, cangrejo, wakame, zanahoria, pepino, edamame y aguacate.", price: 40, icon: "bone", image: null },
-                ]
-            },
-            en: {
-                "Signature Cocktails": [
-                    { name: "UNAGUI VOLCAN (NEW)", description: "Aged rum, red fruits & passion fruit syrup, lemon juice.", price: 35, icon: "volcano", image: null },
-                    { name: "SUKURA FLOWER (NEW)", description: "White tequila, curaçao, panela syrup, lemon, passion fruit & lychee.", price: 35, icon: "flower", image: null },
-                    { name: "TOKYO SMOKE", description: "Ojo de Tigre Mezcal, lemon juice, honey, green tea.", price: 40, icon: "cigarette", image: null },
-                    { name: "MIDORI BASIL", description: "Gin, melon liqueur, lemon, basil, cinnamon syrup.", price: 35, icon: "leaf", image: null },
-                    { name: "ISABELLA MOJITO", description: "Absolut Vodka, agraz, Isabella grapes, Tahiti lime, mint, sugar.", price: 28, icon: "grape", image: null },
-                    { name: "BUTTERFLY PEA", description: "Absolut Vodka, lemon, lychee syrup, simple syrup, soda, butterfly pea tea.", price: 28, icon: "flower", image: null },
-                    { name: "MIYAKO ISLAND", description: "Gin, prosecco, curaçao, lemon, soda.", price: 38, icon: "palmtree", image: null },
-                ],
-                "Classic Cocktails": [
-                    { name: "CLASSIC MOJITO", description: "Santero 3-year Rum, Tahiti lime, mint, simple syrup, soda.", price: 23, icon: "glass-water", image: null },
-                    { name: "FRUIT MOJITO (PASSION FRUIT OR COROZO)", description: "Santero 3-year Rum, Tahiti lime, mint, fruit syrup, soda.", price: 25, icon: "citrus", image: null },
-                    { name: "CLASSIC MARGARITA", description: "Olmeca Tequila, triple sec, Tahiti lime, simple syrup.", price: 25, icon: "glass-water", image: null },
-                    { name: "FRUIT MARGARITA (PASSION FRUIT OR COROZO)", description: "Olmeca Tequila, triple sec, Tahiti lime, fruit syrup.", price: 27, icon: "citrus", image: null },
-                    { name: "GIN TONIC", description: "Gin, tonic, lemon peels.", price: 22, icon: "glass-water", image: null },
-                    { name: "MOSCOW MULE", description: "Absolut Vodka, ginger syrup, Tahiti lime, soda.", price: 25, icon: "glass-water", image: null },
-                ],
-                "Premium Cocktails": [
-                    { name: "PATRÓN MARGARITA", description: "Patrón Tequila, triple sec, Tahiti lime, simple syrup.", price: 40, icon: "star", image: null },
-                    { name: "DON JULIO MARGARITA", description: "Don Julio Tequila, triple sec, Tahiti lime, fruit syrup.", price: 40, icon: "star", image: null },
-                    { name: "BEEFEATER GIN TONIC", description: "Beefeater Gin, tonic, lemon, rosemary.", price: 37, icon: "star", image: null },
-                    { name: "BOMBAY GIN TONIC", description: "Bombay Gin, tonic, lemon, pepper.", price: 37, icon: "star", image: null },
-                    { name: "OAXACA PALOMA", description: "Ojo de Tigre Mezcal, Tahiti lime, grapefruit soda.", price: 40, icon: "star", image: null },
-                ],
-                "Sangrias & Seltzers": [
-                    { name: "HOUSE SANGRIA", description: "Red wine, pineapple, orange, lemon, apple, rum, ginger ale.", price: 25, icon: "wine", image: null },
-                    { name: "LYCHEE SELTZER", description: "Lychee Seltzer, agraz, Isabella grapes, strawberry popsicle.", price: 30, icon: "sparkles", image: null },
-                ],
-                "Spirits": [
-                    { name: "RON HECHICERA", description: "Rum shot.", price: 40, icon: "glass-water", image: null },
-                    { name: "RON ZACAPA AMBAR", description: "Rum shot.", price: 35, icon: "glass-water", image: null },
-                    { name: "TEQUILA PATRÓN REP.", description: "Tequila shot.", price: 40, icon: "glass-water", image: null },
-                    { name: "TEQUILA DON JULIO REP.", description: "Tequila shot.", price: 37, icon: "glass-water", image: null },
-                    { name: "WHISKY GLENLIVET", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "WHISKY CHIVAS EXTRA", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "JACK DANIEL'S", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "BUCHANANS MASTER", description: "Whisky shot.", price: 30, icon: "glass-water", image: null },
-                    { name: "BUCHANANS 18 YEARS", description: "Whisky shot.", price: 50, icon: "glass-water", image: null },
-                    { name: "MEZCAL OJO DE TIGRE", description: "Mezcal shot.", price: 30, icon: "glass-water", image: null },
-                ],
-                "Beers": [
-                    { name: "STELLA", description: "Beer.", price: 18, icon: "beer", image: null },
-                    { name: "CORONITA", description: "Beer.", price: 15, icon: "beer", image: null },
-                    { name: "ASAHI BEER", description: "Japanese Beer.", price: 18, icon: "beer", image: null },
-                    { name: "MODELO BEER", description: "Beer.", price: 15, icon: "beer", image: null },
-                ],
-                "Lemonades & Sodas": [
-                    { name: "COCONUT LEMONADE", description: "Refreshing coconut lemonade.", price: 15, icon: "citrus", image: null },
-                    { name: "MINT LEMONADE", description: "Refreshing.", price: 15, icon: "leaf", image: null },
-                    { name: "GINGER LEMONADE", description: "Refreshing.", price: 15, icon: "citrus", image: null },
-                    { name: "WINE LEMONADE", description: "With a hint of wine.", price: 20, icon: "wine", image: null },
-                    { name: "PASSION FRUIT SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "COROZO SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "PANELA SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "HIBISCUS SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "RED FRUITS SODA", description: "Artisanal soda.", price: 15, icon: "cup-soda", image: null },
-                    { name: "LYCHEE SODA", description: "Artisanal soda.", price: 20, icon: "cup-soda", image: null },
-                ],
-                "Soft Drinks": [
-                    { name: "STILL WATER", description: "Bottle.", price: 7, icon: "droplet", image: null },
-                    { name: "SPARKLING WATER", description: "Bottle.", price: 7, icon: "droplet", image: null },
-                    { name: "SODA", description: "Bottle.", price: 7, icon: "droplet", image: null },
-                    { name: "CANADA DRY", description: "Bottle.", price: 7, icon: "droplet", image: null },
-                    { name: "COCA COLA", description: "Original.", price: 7, icon: "droplet", image: null },
-                    { name: "COCA COLA ZERO", description: "Sugar-free.", price: 7, icon: "droplet", image: null },
-                    { name: "AMERICAN COFFEE", description: "Coffee from Sierra Nevada.", price: 5, icon: "droplet", image: null },
-                ],
-                "Appetizers": [
-                    { name: "KITOKUSHI MAGURO", description: "Fresh tuna rolls filled with truffled crab, cream cheese, cucumber, masago, truffle butter, eel sauce, and dynamite sauce.", price: 45, icon: "scroll", image: null },
-                    { name: "TUNA TIRADITO", description: "Shrimp, steamed crab, vegetables in rice paper. Delicate cuts of natural tuna over soybean-infused sauce with oils and spices.", price: 40, icon: "scroll", image: null },
-                    { name: "SPRING ROLLS", description: "Shrimp, steamed crab, vegetables in rice paper.", price: 30, icon: "scroll", image: null },
-                    { name: "UNAGUI SALAD", description: "Fresh wakame with crab, scallion, avocado, masago, accompanied by crispy salmon tempura bites filled with cream cheese, masago, and avocado.", price: 38, icon: "shrimp", image: null },
-                    { name: "CHUNEIT SHRIMP", description: "Shrimp tempura in creamy Chuneit sauce (sweet & sour).", price: 40, icon: "shrimp", image: null },
-                    { name: "NEGUI CRUNCH", description: "Salmon bites, crunchy rice, crab salad.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA CRISPY RICE", description: "Crispy rice, avocado mousse, tuna tartare.", price: 30, icon: "utensils", image: null },
-                    { name: "TUNA TATAKI", description: "Sesame-seared tuna over ponzu sauce.", price: 40, icon: "fish", image: null },
-                    { name: "EDAMAME", description: "Soy pods sautéed with sea salt.", price: 18, icon: "bean", image: null },
-                    { name: "GYOZAS", description: "Steamed dumplings filled with pork and vegetables.", price: 25, icon: "dumpling", image: null },
-                    { name: "NECTURNO SALAD", description: "Wakame with fresh salmon and tuna, crab, masago, and scallion, bathed in house sauce.", price: 40, icon: "dumpling", image: null },
-                    { name: "KANI SALAD", description: "Crab mix, scallions, dynamite, crunch, Unagui sauce.", price: 40, icon: "salad", image: null },
-                    { name: "KUSHIYAKI", description: "Fine beef skewers marinated in sesame oil, ginger, garlic, rice vinegar, glazed with teriyaki sauce.", price: 28, icon: "utensils-crossed", image: null },
-                    { name: "YAKITORI", description: "Chicken skewers marinated and caramelized in teriyaki sauce with sesame, ginger, garlic, and rice vinegar.", price: 24, icon: "utensils-crossed", image: null },
-                ],
-                "Nigiris": [
-                    { name: "SAKE NIGIRI", description: "Natural salmon and sushi rice.", price: 20, icon: "fish", image: null },
-                    { name: "UNAGUI NIGIRI", description: "Smoked eel and sushi rice.", price: 25, icon: "fish", image: null },
-                    { name: "MAGURO NIGIRI", description: "Natural tuna and sushi rice.", price: 22, icon: "fish", image: null },
-                    { name: "HAMACHI NIGIRI", description: "Yellowfin tuna and sushi rice.", price: 30, icon: "fish", image: null },
-                    { name: "IKURA NIGIRI", description: "Salmon roe and sushi rice.", price: 45, icon: "circle-dot", image: null },
-                    { name: "MASAGO NIGIRI", description: "Crab roe and sushi rice.", price: 25, icon: "circle-dot", image: null },
-                ],
-                "Sashimi": [
-                    { name: "TUNA SASHIMI", description: "4 pieces of fresh cuts.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "SALMON SASHIMI", description: "4 pieces of fresh cuts.", price: 30, icon: "fish-symbol", image: null },
-                    { name: "HAMACHI SASHIMI", description: "4 pieces of fresh cuts.", price: 60, icon: "fish-symbol", image: null },
-                ],
-                "Special Rolls": [
-                    { name: "MAXI ROLL", description: "Shrimp and salmon tempura, crab, wakame, cream cheese, scallion, masago wrapped in soy paper.", price: 65, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Maxi%20roll.jpg?raw=true" },
-                    { name: "EMI ROLL", description: "Truffled palm heart, shrimp tempura, cream cheese wrapped in soy paper.", price: 55, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Emi%20roll.jpg?raw=true" },
-                    { name: "UNAGUI SPECIAL ROLL", description: "Crab, salmon, cream cheese, flambéed eel topping.", price: 60, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Unagui%20Especial%20Roll.JPG?raw=true" },
-                    { name: "DIPSALMON", description: "Shrimp tempura, crab, cheese, salmon topping.", price: 60, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Dipsalmon%20Roll.JPG?raw=true" },
-                    { name: "OVALLE ROLL", description: "Breaded shrimp, cream cheese, avocado, tuna tartare topping.", price: 48, icon: "disc", image: null },
-                    { name: "NIGUI ROLL", description: "Natural salmon, rice, crunch, crab salad.", price: 48, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Nigui%20Roll.JPG?raw=true" },
-                    { name: "VOLCANO", description: "Salmon and breaded shrimp with cream cheese, topped with crab, wakame, masago, scallion, and spicy sauce.", price: 55, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Volcano%20roll%20(1).jpg?raw=true" },
-                    { name: "TATAKI ROLL", description: "Salmon, cream cheese, avocado, tuna tataki topping and avocado mousse.", price: 48, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Tataki%20Roll.JPG?raw=true"},
-                    { name: "UNAGUI ROLL", description: "Eel and breaded shrimp with cream cheese and scallion, topped with crab.", price: 50, icon: "disc", image: null },
-                    { name: "LATIN ROLL", description: "Breaded shrimp, avocado, cream cheese, topped with ripe banana.", price: 45, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Latin%20roll.jpg?raw=true" },
-                    { name: "EXPLOSION", description: "Shrimp tempura, crab, cream cheese with cucumber, topped with tuna, avocado, and masago.", price: 50, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Explosion.jpg?raw=true" },
-                    { name: "TIGER'S EYE", description: "Salmon, tuna, breaded crab with cream cheese and avocado, topped with black sesame and dynamite sauce.", price: 55, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Ojo%20de%20Tigre%20Roll.JPG?raw=true" },
-                    { name: "FUGI ROLL", description: "Natural salmon with cream cheese and scallion, kakiague topping and shrimp tempura.", price: 50, icon: "disc", image:"https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Fugi%20roll.jpg?raw=true" },
-                    { name: "CALIFORNIA ROLL (CLASSIC)", description: "Crab, avocado, cucumber, topped with masago and black sesame.", price: 30, icon: "sun", image: null },
-                ],
-                "Tempura Rolls": [
-                    { name: "TEMPURA CRUNCH", description: "Eel, breaded crab, tilapia, salmon, scallion, cream cheese, masago, crab topping.", price: 55, icon: "flame", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Tempura%20crunch%20(1).jpg?raw=true" },
-                    { name: "SKIN TEMPURA", description: "Breaded shrimp with cream cheese, crispy salmon skin, avocado, wakame, masago.", price: 45, icon: "flame", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Skin%20tempura%20(1).jpg?raw=true" },
-                    { name: "TIGGER SPECIAL", description: "Salmon, cream cheese, avocado, topped with masago and baked crab.", price: 55, icon: "layers", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Tigger%20especial%20roll.jpg?raw=true" },
-                ],
-                "Natural Rolls": [
-                    { name: "VEGGIE ROLL (VEGAN)", description: "Cucumber, asparagus, avocado, wakame, carrot, sesame.", price: 35, icon: "carrot", image: null },
-                    { name: "KIURI MAKI (NATURAL)", description: "Cucumber base, salmon, tuna, crab, masago, cream cheese, avocado, with ponzu sauce.", price: 35, icon: "cucumber", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Kiuri%20Maki%20Natural%20Roll.JPG?raw=true" },
-                    { name: "RAINBOW (NATURAL)", description: "Tuna, salmon, tilapia, avocado, topped with tuna, salmon, tilapia, avocado.", price: 45, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Rainbow%20Roll.JPG?raw=true" },
-                    { name: "OSAKA FRAIN (NATURAL)", description: "Riceless salmon roll with tuna, tilapia, crab, avocado, cream cheese, masago.", price: 50, icon: "disc", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Osaka%20Frain%20Roll.jpg?raw=true" },
-                    { name: "TUNA SPICE MAKI (NATURAL)", description: "Tuna, crunch, avocado, sriracha, scallion, masago.", price: 40, icon: "disc", image: null },
-                    { name: "SALMON SPECIAL (NATURAL)", description: "Salmon, crunch, scallion, masago, ginger.", price: 35, icon: "disc", image: null },
-                    { name: "ALASKA ROLL (CLASSIC)", description: "Salmon, cream cheese, avocado, sesame.", price: 30, icon: "snowflake", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Alaska%20Roll%20(1).JPG?raw=true" },
-                ],
-                "Mains": [
-                    { name: "YAKIMESHI RICE", description: "Fried rice with chicken, shrimp, egg, vegetables, soy sauce, sesame, topped with fried scallion.", price: 40, icon: "rice-bowl", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Arroz%20yakimeshi.jpg?raw=true" },
-                    { name: "TERIYAKI SALMON", description: "Grilled salmon prepared teriyaki-style, served with oriental rice.", price: 50, icon: "fish", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Salm%C3%B3n%20teriyaki%20(1).jpg?raw=true" },
-                    { name: "YAKISOBA", description: "Stir-fried noodles with chicken, beef, shrimp, and vegetables.", price: 40, icon: "steak", image: null },
-                    { name: "UNAGUI-STYLE RAMEN", description: "House broth with noodles, pork or chicken, egg, soy, tofu, nori.", price: 40, icon: "bone", image: null },
-                    { name: "UNAGUI MIXED RAMEN", description: "House broth with noodles, pork or chicken, egg, soy, tofu, nori.", price: 50, icon: "bone", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Ramen%20(2).jpg?raw=true" },
-                    { name: "TUNA POKE", description: "Natural tuna, shrimp tempura, crab, edamame, avocado, cucumber, sweet potato.", price: 40, icon: "bone", image: "https://github.com/Bruma-cafe-y-croffle/bruma-asses/blob/main/Poke%20de%20at%C3%BAn.jpg?raw=true" },
-                    { name: "SALMON POKE", description: "Natural salmon, crab, wakame, carrot, cucumber, edamame, avocado.", price: 40, icon: "bone", image: null },
-                ]
-            }
-        };
-
-        const allMenuData = {
-            "Sede Los Cocos": menuDataLosCocos,
-            "Sede Aluna Plaza": menuDataAlunaPlaza
-        };
-
-        // --- IDIOMA Y ESTADO ---
-        let currentLang = 'es';
-        let activeCategory = null;
-        let activeSede = null;
-        const navModal = document.getElementById('nav-modal');
-        const navPanel = document.getElementById('nav-panel');
-        let promoTimeout = null;
-
-        // --- TRADUCCIÓN COMPLETA ---
-        function translatePage() {
-            const t = translations[currentLang];
-            document.getElementById('welcome-title').textContent = t.welcomeTitle;
-            document.getElementById('welcome-subtitle').textContent = t.welcomeSubtitle;
-            document.getElementById('nav-title').textContent = t.menuAndContact;
-            document.getElementById('nav-change-sede').textContent = t.changeSede;
-            document.getElementById('nav-contact-title').textContent = t.contactTitle;
-            document.getElementById('nav-whatsapp').textContent = t.whatsapp;
-            document.getElementById('nav-location').textContent = t.location;
-            document.getElementById('nav-instagram').textContent = t.instagram;
-            document.getElementById('promo-offer').textContent = t.offer;
-            document.getElementById('promo-close').textContent = t.promoClose;
-            document.getElementById('promo-details').textContent = t.promoDetails;
-            document.getElementById('footer-text').textContent = t.footer;
-            document.getElementById('lang-es').className = currentLang === 'es' 
-                ? 'text-xs font-bold px-2 py-1 rounded bg-unagui-orange text-black'
-                : 'text-xs font-bold px-2 py-1 rounded text-gray-400 hover:text-white border border-gray-600';
-            document.getElementById('lang-en').className = currentLang === 'en'
-                ? 'text-xs font-bold px-2 py-1 rounded bg-unagui-orange text-black'
-                : 'text-xs font-bold px-2 py-1 rounded text-gray-400 hover:text-white border border-gray-600';
-
-            // Traducir nombre de sede activa
-            if (activeSede) {
-                document.getElementById('active-sede-display').textContent = t.sedeNames[activeSede] || activeSede;
-            }
-
-            // Si ya se ha seleccionado una sede, recargar menú
-            if (activeSede) {
-                initializeMenuCategories();
-            }
-
-            // Si hay promoción abierta, actualizarla
-            const promoModal = document.getElementById('promo-modal');
-            if (!promoModal.classList.contains('hidden') && activeSede) {
-                const promo = promotionsBySede[activeSede][currentLang];
-                if (promo) {
-                    document.getElementById('promo-title').textContent = promo.title;
-                    document.getElementById('promo-description').textContent = promo.description;
-                    document.getElementById('promo-price').textContent = promo.price;
-                }
-            }
-        }
-
-        function setLanguage(lang) {
-            if (!translations[lang]) return;
-            currentLang = lang;
-            translatePage();
-        }
-
-        document.getElementById('lang-es').addEventListener('click', () => setLanguage('es'));
-        document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
-
-        // --- ACTUALIZAR LINKS DE CONTACTO ---
-        function updateNavLinks() {
-            const whatsappLink = document.getElementById('whatsapp-link');
-            const locationLink = document.getElementById('location-link');
-            if (activeSede && sedeDetails[activeSede]) {
-                const details = sedeDetails[activeSede];
-                whatsappLink.href = `https://wa.me/${details.whatsapp}?text=Hola%20Unagui%20(${activeSede}),%20quisiera%20hacer%20un%20pedido.`;
-                locationLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(details.direccion)}`;
-            }
-        }
-
-        // --- TOGGLE MODAL ---
-        function toggleNavModal(show, event) {
-            if (!show && event && event.target.id !== 'nav-modal') return;
-            if (show) {
-                updateNavLinks();
-                navModal.classList.remove('hidden');
-                setTimeout(() => {
-                    navPanel.classList.remove('nav-modal-slide-out');
-                    navPanel.classList.add('nav-modal-slide-in');
-                }, 10);
-            } else {
-                navPanel.classList.remove('nav-modal-slide-in');
-                navPanel.classList.add('nav-modal-slide-out');
-                setTimeout(() => {
-                    navModal.classList.add('hidden');
-                }, 300);
-            }
-        }
-
-        // --- SELECCIÓN DE SEDE ---
-        function showSedeSelection() {
-            document.getElementById('menu-container').classList.add('hidden');
-            document.getElementById('sede-selection-container').classList.remove('hidden');
-            activeSede = null;
-            closePromoModal();
-            if (promoTimeout) clearTimeout(promoTimeout);
-        }
-
-        function selectSede(sedeName) {
-            activeSede = sedeName;
-            document.getElementById('active-sede-display').textContent = translations[currentLang].sedeNames[sedeName] || sedeName;
-            document.getElementById('sede-selection-container').classList.add('hidden');
-            document.getElementById('menu-container').classList.remove('hidden');
-            initializeMenuCategories();
-            updateNavLinks();
-            if (promoTimeout) clearTimeout(promoTimeout);
-            promoTimeout = setTimeout(showPromoModal, 5000);
-        }
-
-        // --- FORMATO DE PRECIO ---
-        function formatPrice(amount) {
-            return new Intl.NumberFormat('es-CO', {
-                style: 'currency',
-                currency: 'COP',
-                minimumFractionDigits: 0
-            }).format(amount * 1000);
-        }
-
-        // --- MODAL DE IMAGEN ---
-        function openImageModal(imgSrc, title) {
-            const modal = document.getElementById('dish-image-modal');
-            const img = document.getElementById('modal-dish-img');
-            const modalTitle = document.getElementById('modal-dish-title');
-            if (!imgSrc) {
-                img.src = `https://placehold.co/600x400/1c1c1c/D4A017?text=${encodeURIComponent(title)}`;
-            } else {
-                img.src = imgSrc;
-            }
-            modalTitle.textContent = title;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeDishImageModal() {
-            const modal = document.getElementById('dish-image-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        // --- MODAL DE PROMOCIÓN ---
-        function showPromoModal() {
-            if (!activeSede) return;
-            const promo = promotionsBySede[activeSede][currentLang];
-            if (!promo) return;
-            const modal = document.getElementById('promo-modal');
-            document.getElementById('promo-title').textContent = promo.title;
-            document.getElementById('promo-description').textContent = promo.description;
-            document.getElementById('promo-price').textContent = promo.price;
-            document.getElementById('promo-img').src = promotionsBySede[activeSede].image;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closePromoModal() {
-            const modal = document.getElementById('promo-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function scrollToCategoryPromo() {
-            const promo = promotionsBySede[activeSede][currentLang];
-            if (!promo) return;
-            const menuForSede = allMenuData[activeSede][currentLang];
-            for (const [category, items] of Object.entries(menuForSede)) {
-                if (items.some(item => item.name === promo.title)) {
-                    showCategory(category);
-                    return;
-                }
-            }
-        }
-
-        // --- MENÚ ---
-        function initializeMenuCategories() {
-            const navContainer = document.getElementById('category-nav');
-            const menuForSede = allMenuData[activeSede][currentLang];
-            const categories = Object.keys(menuForSede);
-            navContainer.innerHTML = '';
-            categories.forEach((category, index) => {
-                const button = document.createElement('button');
-                button.textContent = category;
-                button.className = `category-btn px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 ${index === 0 ? 'bg-unagui-orange text-black' : 'bg-unagui-charcoal text-gray-400 hover:text-white'}`;
-                button.setAttribute('data-category', category);
-                button.onclick = () => showCategory(category);
-                navContainer.appendChild(button);
-            });
-            if (categories.length > 0) showCategory(categories[0]);
-        }
-
-        function showCategory(categoryName) {
-            const menuForSede = allMenuData[activeSede][currentLang];
-            if (activeCategory === categoryName && document.getElementById('menu-content').children.length > 0) return;
-            activeCategory = categoryName;
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                if (btn.getAttribute('data-category') === categoryName) {
-                    btn.className = 'category-btn px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap flex-shrink-0 bg-unagui-orange text-black shadow-lg shadow-yellow-900/50';
-                } else {
-                    btn.className = 'category-btn px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap flex-shrink-0 bg-unagui-charcoal text-gray-400 hover:text-white border border-gray-800';
-                }
-            });
-            const activeBtn = document.querySelector(`.category-btn[data-category="${categoryName}"]`);
-            if(activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            const contentContainer = document.getElementById('menu-content');
-            const items = menuForSede[categoryName];
-            contentContainer.innerHTML = items.map(item => `
-                <div class="bg-unagui-charcoal p-4 rounded-xl border border-gray-800 hover:border-unagui-orange/40 transition-all flex flex-col justify-between h-full group">
-                    <div class="mb-3">
-                        <div class="flex items-start justify-between mb-1">
-                            <h3 class="text-base font-bold text-white leading-tight clickable-name hover:text-unagui-orange transition-colors"
-                                onclick="openImageModal('${item.image || ''}', '${item.name}')"
-                                title="Ver foto de ${item.name}"
-                            >
-                                ${item.name}
-                            </h3>
-                            <i data-lucide="${item.icon || 'circle'}" class="w-4 h-4 text-unagui-orange-light opacity-70 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2"></i>
+        
+        <div className="grid grid-cols-1 gap-4">
+          {category.items.map((item) => (
+            <motion.div
+              key={item.id}
+              whileHover={{ scale: 1.02 }}
+              className="bg-black/50 rounded-xl overflow-hidden border-2 border-transparent hover:border-yellow-500 transition-all cursor-pointer"
+              style={{ backgroundColor: `${category.color}10` }}
+              onClick={() => toggleItemExpansion(item.id)}
+            >
+              <div className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">{item.name}</h3>
+                    <p className="text-gray-300 text-sm mb-2">{item.description}</p>
+                    <span className="text-yellow-500 font-bold text-lg">${item.price.toFixed(2)}</span>
+                  </div>
+                  {expandedItems.has(item.id) ? <Minus size={20} className="text-yellow-500" /> : <Plus size={20} className="text-white" />}
+                </div>
+                
+                <AnimatePresence>
+                  {expandedItems.has(item.id) && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden mt-4 pt-4 border-t border-gray-600"
+                    >
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-48 object-cover rounded-lg mb-4"
+                      />
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setQuantity(Math.max(1, quantity - 1)); }}
+                            className="bg-gray-700 text-white p-1 rounded"
+                          >
+                            <Minus size={16} />
+                          </button>
+                          <span className="text-white w-8 text-center">{quantity}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setQuantity(quantity + 1); }}
+                            className="bg-gray-700 text-white p-1 rounded"
+                          >
+                            <Plus size={16} />
+                          </button>
                         </div>
-                        <p class="text-xs text-gray-400 line-clamp-3">${item.description}</p>
-                    </div>
-                    <div class="pt-3 border-t border-gray-800">
-                        <span class="text-lg font-bold text-unagui-orange">${formatPrice(item.price)}</span>
-                    </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                          className="bg-yellow-500 text-black px-4 py-2 rounded-full font-bold hover:bg-yellow-600 transition-colors"
+                        >
+                          Agregar al pedido
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Cart modal
+  const CartModal = () => {
+    const { subtotal, deliveryFee, total } = getTotal();
+    
+    return (
+      <AnimatePresence>
+        {showCart && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ y: 50, scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 50, scale: 0.95 }}
+              className="bg-black rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-yellow-500" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+                    Tu Pedido
+                  </h3>
+                  <button
+                    onClick={() => setShowCart(false)}
+                    className="text-white hover:text-yellow-500 transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
                 </div>
-            `).join('');
-            lucide.createIcons();
-        }
+                
+                {cart.length === 0 ? (
+                  <div className="text-center py-8 text-gray-300">
+                    <ShoppingCart size={48} className="mx-auto mb-4 text-yellow-500" />
+                    <p>Tu carrito está vacío</p>
+                    <button
+                      onClick={() => setShowCart(false)}
+                      className="mt-4 bg-yellow-500 text-black px-4 py-2 rounded-full font-bold hover:bg-yellow-600 transition-colors"
+                    >
+                      Seguir comprando
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4 mb-6">
+                      {cart.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-12 h-12 rounded object-cover"
+                            />
+                            <div>
+                              <h4 className="text-white font-medium">{item.name}</h4>
+                              <p className="text-yellow-500 text-sm">${item.price.toFixed(2)} x {item.quantity}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="bg-gray-700 text-white p-1 rounded"
+                            >
+                              <Minus size={16} />
+                            </button>
+                            <span className="text-white w-6 text-center">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="bg-gray-700 text-white p-1 rounded"
+                            >
+                              <Plus size={16} />
+                            </button>
+                            <button
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-red-500 hover:text-red-400 transition-colors"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="border-t border-gray-700 pt-4 mb-6">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-300">Subtotal:</span>
+                        <span className="text-white">${subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-300">Entrega:</span>
+                        <span className="text-white">${deliveryFee.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-lg">
+                        <span className="text-yellow-500">Total:</span>
+                        <span className="text-yellow-500">${total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-6">
+                      <label className="block text-white mb-2">Tipo de pedido:</label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            value="pickup"
+                            checked={orderType === 'pickup'}
+                            onChange={(e) => setOrderType(e.target.value)}
+                            className="mr-2"
+                          />
+                          <span className="text-white">Para recoger</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            value="delivery"
+                            checked={orderType === 'delivery'}
+                            onChange={(e) => setOrderType(e.target.value)}
+                            className="mr-2"
+                          />
+                          <span className="text-white">Domicilio</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-6">
+                      <label className="block text-white mb-2">Comentarios adicionales:</label>
+                      <textarea
+                        value={orderComments}
+                        onChange={(e) => setOrderComments(e.target.value)}
+                        placeholder="Ej: Sin cebolla, extra queso, etc."
+                        className="w-full bg-gray-800 text-white p-3 rounded-lg resize-none"
+                        rows="3"
+                      />
+                    </div>
+                    
+                    <button
+                      onClick={handleCheckout}
+                      className="w-full bg-yellow-500 text-black py-3 rounded-full font-bold text-lg hover:bg-yellow-600 transition-colors"
+                    >
+                      Confirmar Pedido
+                    </button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
 
-        // Init
-        window.onload = () => {
-            showSedeSelection();
-            setLanguage('es');
-            lucide.createIcons();
-        };
-    </script>
-</body>
-</html>
+  // Contact section
+  const ContactSection = () => (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black pt-20 pb-20">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-yellow-500 mb-8 text-center" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+          Contáctanos
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-black/50 rounded-xl p-6">
+            <h3 className="text-2xl font-bold text-white mb-4">Información de Contacto</h3>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Phone size={20} className="text-yellow-500" />
+                <span className="text-white">+1 (555) 123-4567</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <MapPin size={20} className="text-yellow-500" />
+                <span className="text-white">Calle Principal #123, Ciudad</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Clock size={20} className="text-yellow-500" />
+                <span className="text-white">Lunes a Domingo: 12:00 PM - 10:00 PM</span>
+              </div>
+            </div>
+            
+            <div className="mt-8">
+              <h4 className="text-xl font-bold text-white mb-4">Redes Sociales</h4>
+              <div className="flex space-x-4">
+                <a href="#" className="text-white hover:text-yellow-500 transition-colors">
+                  <Facebook size={24} />
+                </a>
+                <a href="#" className="text-white hover:text-yellow-500 transition-colors">
+                  <Instagram size={24} />
+                </a>
+                <a href="#" className="text-white hover:text-yellow-500 transition-colors">
+                  <Twitter size={24} />
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-black/50 rounded-xl p-6">
+            <h3 className="text-2xl font-bold text-white mb-4">Ubicación</h3>
+            <div className="aspect-video bg-gray-800 rounded-lg mb-4">
+              <img
+                src="https://placehold.co/600x300/333333/FFFFFF?text=Mapa+de+Ubicación"
+                alt="Mapa de ubicación"
+                className="w-full h-full object-cover rounded-lg"
+              />
+            </div>
+            <p className="text-gray-300">
+              Estamos ubicados en el corazón de la ciudad, fácilmente accesible desde cualquier punto. ¡Ven a disfrutar de nuestra deliciosa comida callejera!
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
+  // Render the appropriate section based on currentSection
+  const renderContent = () => {
+    switch (currentSection) {
+      case 'home':
+        return <HomeSection />;
+      case 'menu':
+        return selectedCategory ? <CategoryDetailView category={selectedCategory} /> : <MenuSection />;
+      case 'contact':
+        return <ContactSection />;
+      default:
+        return <HomeSection />;
+    }
+  };
+
+  return (
+    <div className="font-sans">
+      <Navigation />
+      {renderContent()}
+      <FloatingCartButton />
+      <CartModal />
+    </div>
+  );
+};
+
+export default App;
